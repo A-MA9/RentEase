@@ -1,4 +1,4 @@
-# flutter_app_2
+# RentEase
 
 A new Flutter project.
 
