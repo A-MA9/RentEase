@@ -18,4 +18,4 @@ def get_db_connection():
             return conn
         except Exception as error:
             print(f"Error connecting to database: {error}")
-            time.sleep(2)  # Wait for 2 seconds before retrying
+            time.sleep(2)  # Wait for 2 seconds before retrying/again
