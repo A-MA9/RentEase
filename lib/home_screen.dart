@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'search_page.dart'; // Import the search page
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,24 +33,25 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  void _navigateToSearch() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SearchPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search for rentals...',
-              prefixIcon: Icon(Icons.search, color: Colors.brown),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 12),
-            ),
+        title: Text(
+          "Find Your Rental",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
       ),
@@ -58,15 +60,32 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Current Location Option
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search for rentals...',
+                    prefixIcon: Icon(Icons.search, color: Colors.brown),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             ListTile(
               leading: Icon(Icons.my_location, color: Colors.brown),
               title: Text("My Current Location"),
               onTap: _requestLocationPermission,
             ),
             SizedBox(height: 10),
-
-            // Popular Searches
             Text(
               "Popular Locations",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -75,20 +94,20 @@ class _HomeScreenState extends State<HomeScreen> {
             Wrap(
               spacing: 8.0,
               children: [
-                Chip(label: Text("Masala Chowk")),
+                GestureDetector(
+                  onTap: _navigateToSearch,
+                  child: Chip(label: Text("Jaipur")),
+                ),
                 Chip(label: Text("Gandhi Market")),
                 Chip(label: Text("Bagru")),
               ],
             ),
             SizedBox(height: 20),
-
-            // Popular Rentals Near You
             Text(
               "Popular Rentals Near You",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             SizedBox(height: 10),
-
             _locationPermissionGranted
                 ? Expanded(
                   child: ListView.builder(

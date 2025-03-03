@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'home_screen.dart';
 import 'seeker_signup.dart';
 import 'owner_signup.dart';
+import 'home_page.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -23,7 +23,7 @@ class SignUpScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    MaterialPageRoute(builder: (context) => HomePage()),
                   );
                 },
               ),
