@@ -12,7 +12,7 @@ def get_db_connection():
                 host="localhost",
                 database="rentease",
                 user="postgres",
-                password="9311",  # Update this to match your actual PostgreSQL password
+                password="aman",  # Update this to match your actual PostgreSQL password
                 cursor_factory=RealDictCursor
             )
             return conn

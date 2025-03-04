@@ -10,7 +10,7 @@ def init_database():
         host="localhost",
         database="postgres",
         user="postgres",
-        password="9311"  # Change this to your actual password
+        password="aman"  # Change this to your actual password
     )
     conn.autocommit = True
     cursor = conn.cursor()
@@ -31,7 +31,7 @@ def init_database():
         host="localhost",
         database="rentease",
         user="postgres",
-        password="9311"  # Change this to your actual password
+        password="aman"  # Change this to your actual password
     )
     cursor = conn.cursor()
     

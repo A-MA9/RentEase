@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'search_page.dart'; // Import the search page
+import 'home_page.dart'; // Import the home page
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
+          },
+        ),
         title: Text(
           "Find Your Rental",
           style: TextStyle(

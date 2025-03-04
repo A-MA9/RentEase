@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
 
 class SearchPage extends StatefulWidget {
   @override
@@ -61,7 +62,7 @@ class _SearchPageState extends State<SearchPage> {
           onPressed:
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SearchPage()),
+                MaterialPageRoute(builder: (context) => HomeScreen()),
               ),
         ),
         title: Container(
