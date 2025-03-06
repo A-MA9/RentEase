@@ -38,9 +38,10 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
 
     try {
       // Use the correct URL based on platform
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/register/owner' // For web
-          : 'http://10.0.2.2:8000/register/owner'; // For Android emulator
+      final apiUrl =
+          kIsWeb
+              ? 'http://localhost:8000/register/owner' // For web
+              : 'http://10.0.2.2:8000/register/owner'; // For Android emulator
 
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -76,9 +77,9 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     }
   }
 
@@ -165,8 +166,9 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -212,17 +214,32 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _registerOwner,
+                    // onPressed: _isLoading ? null : _registerOwner,
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VerificationScreen(userType: 1),
+                        ),
+                      );
+                    },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Sign Up",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
+                    child:
+                        _isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text(
+                              "Sign Up",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
                   ),
                 ),
 
@@ -234,14 +251,17 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                     children: [
                       const Text("Need Help?"),
                       TextButton(
-                          onPressed: () {}, child: const Text("Click Here")),
+                        onPressed: () {},
+                        child: const Text("Click Here"),
+                      ),
                       const SizedBox(height: 10),
                       GestureDetector(
                         onTap: () {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => LoginScreen()),
+                              builder: (context) => LoginScreen(),
+                            ),
                           );
                         },
                         child: const Text(
