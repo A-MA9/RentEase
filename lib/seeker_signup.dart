@@ -5,6 +5,7 @@ import 'verification_1.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'services/otp_service.dart';
 
 class SeekerSignUpScreen extends StatefulWidget {
   const SeekerSignUpScreen({super.key});
@@ -37,6 +38,26 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
     });
 
     try {
+      // Generate OTP
+      final otp = OtpService.generateOtp();
+      
+      // Send OTP via email
+      final otpSent = await OtpService.sendOtp(
+        email: _emailController.text,
+        name: _nameController.text,
+        otp: otp,
+      );
+      
+      if (!otpSent) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send verification email. Please try again.')),
+        );
+        return;
+      }
+
       // Use the correct URL for web
       final apiUrl = kIsWeb
           ? 'http://localhost:8000/register/seeker' // For web
@@ -62,7 +83,11 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VerificationScreen(userType: 0),
+            builder: (context) => VerificationScreen(
+              userType: 0,
+              email: _emailController.text,
+              fullName: _nameController.text,
+            ),
           ),
         );
       } else {

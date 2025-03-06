@@ -5,6 +5,7 @@ import 'verification_1.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'services/otp_service.dart';
 
 class OwnerSignUpScreen extends StatefulWidget {
   const OwnerSignUpScreen({super.key});
@@ -37,6 +38,26 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
     });
 
     try {
+      // Generate OTP
+      final otp = OtpService.generateOtp();
+      
+      // Send OTP via email
+      final otpSent = await OtpService.sendOtp(
+        email: _emailController.text,
+        name: _nameController.text,
+        otp: otp,
+      );
+      
+      if (!otpSent) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send verification email. Please try again.')),
+        );
+        return;
+      }
+
       // Use the correct URL based on platform
       final apiUrl = kIsWeb
           ? 'http://localhost:8000/register/owner' // For web
@@ -62,7 +83,11 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VerificationScreen(userType: 1),
+            builder: (context) => VerificationScreen(
+              userType: 1,
+              email: _emailController.text,
+              fullName: _nameController.text,
+            ),
           ),
         );
       } else {

@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'property_type.dart';
+import 'services/otp_service.dart';
 
 class Verification2Screen extends StatefulWidget {
   final int userType;
+  final String email;
 
-  const Verification2Screen({Key? key, required this.userType})
-    : super(key: key);
+  const Verification2Screen({
+    Key? key, 
+    required this.userType,
+    required this.email,
+  }) : super(key: key);
 
   @override
   State<Verification2Screen> createState() => _Verification2ScreenState();
@@ -19,6 +24,9 @@ class _Verification2ScreenState extends State<Verification2Screen> {
     (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
+  
+  bool _isVerifying = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -31,21 +39,51 @@ class _Verification2ScreenState extends State<Verification2Screen> {
     super.dispose();
   }
 
-  void _onOtpEntered() {
+  Future<void> _verifyOtp() async {
     String otpCode = _controllers.map((e) => e.text).join();
-    if (otpCode.length == 6) {
-      // Check userType and navigate accordingly
-      if (widget.userType == 1) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => SelectPropertyTypeScreen()),
-        );
+    
+    if (otpCode.length != 6) {
+      setState(() {
+        _errorMessage = 'Please enter all 6 digits';
+      });
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final isValid = await OtpService.verifyOtp(
+        email: widget.email,
+        enteredOtp: otpCode,
+      );
+
+      if (isValid) {
+        // Navigate based on user type
+        if (widget.userType == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => SelectPropertyTypeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        }
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+        setState(() {
+          _errorMessage = 'Invalid or expired OTP. Please try again.';
+          _isVerifying = false;
+        });
       }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An error occurred: ${e.toString()}';
+        _isVerifying = false;
+      });
     }
   }
 
@@ -66,18 +104,15 @@ class _Verification2ScreenState extends State<Verification2Screen> {
         ),
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {
-            FocusScope.of(
-              context,
-            ).requestFocus(_focusNodes[index + 1]); // Move to next
+            FocusScope.of(context).requestFocus(_focusNodes[index + 1]); // Move to next
           }
-          _onOtpEntered();
+          if (_controllers.every((controller) => controller.text.isNotEmpty)) {
+            _verifyOtp();
+          }
         },
-        onSubmitted: (_) => _onOtpEntered(),
         onEditingComplete: () {
           if (index > 0 && _controllers[index].text.isEmpty) {
-            FocusScope.of(
-              context,
-            ).requestFocus(_focusNodes[index - 1]); // Move back
+            FocusScope.of(context).requestFocus(_focusNodes[index - 1]); // Move back
           }
         },
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -92,8 +127,7 @@ class _Verification2ScreenState extends State<Verification2Screen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Navigate back to verification_1.dart
-            Navigator.pushReplacementNamed(context, '/verification_1');
+            Navigator.pop(context);
           },
         ),
         title: const Text(
@@ -109,10 +143,10 @@ class _Verification2ScreenState extends State<Verification2Screen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 30),
-            const Text(
-              "Enter the 6-digit verification code sent to your number",
+            Text(
+              "Enter the 6-digit verification code sent to ${widget.email}",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 30),
 
@@ -124,10 +158,40 @@ class _Verification2ScreenState extends State<Verification2Screen> {
 
             const SizedBox(height: 20),
 
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+            if (_isVerifying)
+              const CircularProgressIndicator(color: Colors.brown)
+            else
+              ElevatedButton(
+                onPressed: _verifyOtp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 15,
+                  ),
+                ),
+                child: const Text(
+                  "Verify",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
             // Resend OTP
             TextButton(
               onPressed: () {
-                // Handle resend OTP logic
+                Navigator.pop(context);
               },
               child: const Text(
                 "Resend OTP",
