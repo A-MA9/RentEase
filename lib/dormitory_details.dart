@@ -1,201 +1,174 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class DormitoryDetailsScreen extends StatefulWidget {
+class DormitoryDetailsPage extends StatefulWidget {
   @override
-  _DormitoryDetailsScreenState createState() => _DormitoryDetailsScreenState();
+  _DormitoryDetailsPageState createState() => _DormitoryDetailsPageState();
 }
 
-class _DormitoryDetailsScreenState extends State<DormitoryDetailsScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _typeController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
+class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
+  String selectedGender = "Both";
+  File? _image;
 
-  String _selectedGender = "";
-
-  bool get isFormValid {
-    return _nameController.text.isNotEmpty &&
-        _typeController.text.isNotEmpty &&
-        _descriptionController.text.isNotEmpty &&
-        _selectedGender.isNotEmpty;
-  }
-
-  void _onGenderSelected(String gender) {
-    setState(() {
-      _selectedGender = gender;
-    });
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Dormitory Data"),
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          "Dormitory Details",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Please Complete Dormitory data",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Help prospective tenants find out which boarding house you are going to rent out.",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            SizedBox(height: 16),
-
-            // Dormitory Name
-            Text(
-              "1. What is the name of this Dormitory?",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Suggestion: Dormitory (space) Name of the dormitory. No name of District or City.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: "Fill name Dormitory",
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTextField("Dormitory Name", "Fill name Dormitory"),
+              _buildTextField("Type of Room", "Fill type"),
+              SizedBox(height: 10),
+              Text(
+                "Rented to Man/Woman?",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildGenderSelection("Man", "assets/man.png"),
+                  _buildGenderSelection("Woman", "assets/woman.png"),
+                  _buildGenderSelection("Both", "assets/man_woman.png"),
+                ],
+              ),
+              SizedBox(height: 10),
+              _buildTextField(
+                "Description",
+                "Fill in the description",
+                maxLines: 3,
+              ),
+              _buildTextField("Address", "Fill in the address"),
+              _buildTextField(
+                "Room Availability",
+                "Enter number of rooms available",
+              ),
+              _buildTextField("Price", "Enter price per month"),
+              SizedBox(height: 10),
+              Text(
+                "Upload Dormitory Photos",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey),
+                  ),
+                  child:
+                      _image == null
+                          ? Icon(Icons.camera_alt, size: 50, color: Colors.grey)
+                          : Image.file(_image!, fit: BoxFit.cover),
                 ),
               ),
-              onChanged: (value) => setState(() {}),
-            ),
-            SizedBox(height: 16),
-
-            // Room Type
-            Text(
-              "2. Type of Room?",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Suggestion: Type A or VVIP or Executive",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            TextField(
-              controller: _typeController,
-              decoration: InputDecoration(
-                hintText: "Fill type",
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onChanged: (value) => setState(() {}),
-            ),
-            SizedBox(height: 16),
-
-            // Rented to (Man, Woman, Both)
-            Text(
-              "3. Rented to Man/Woman?",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Please choose a suitable dormitory type.",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children:
-                  ["Man", "Woman", "Both"].map((gender) {
-                    bool isSelected = _selectedGender == gender;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onGenderSelected(gender),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          margin: EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.brown : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                gender == "Man"
-                                    ? Icons.man
-                                    : gender == "Woman"
-                                    ? Icons.woman
-                                    : Icons.people,
-                                color: isSelected ? Colors.white : Colors.grey,
-                              ),
-                              Text(
-                                gender,
-                                style: TextStyle(
-                                  color:
-                                      isSelected ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-            ),
-            SizedBox(height: 16),
-
-            // Description
-            Text(
-              "4. Description?",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Tell us something interesting about your Dormitory",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                hintText: "Fill in the description",
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onChanged: (value) => setState(() {}),
-              maxLines: 3,
-            ),
-            SizedBox(height: 16),
-
-            // Continue Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed:
-                    isFormValid
-                        ? () {
-                          Navigator.pop(
-                            context,
-                            true,
-                          ); // Return 'true' to previous page
-                        }
-                        : null,
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {},
+                child: Text("Continue", style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown,
-                  padding: EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
-                child: Text("Continue", style: TextStyle(color: Colors.white)),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, String hint, {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 5),
+          TextField(
+            maxLines: maxLines,
+            decoration: InputDecoration(
+              hintText: hint,
+              filled: true,
+              fillColor: Colors.grey[200],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderSelection(String label, String imagePath) {
+    return Column(
+      children: [
+        Image.asset(imagePath, width: 50, height: 50),
+        SizedBox(height: 5),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              selectedGender = label;
+            });
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: selectedGender == label ? Colors.brown : Colors.white,
+              border: Border.all(color: Colors.brown),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selectedGender == label ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

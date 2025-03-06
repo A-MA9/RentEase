@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'home_screen.dart';
-import 'dormitory_data.dart';
+import 'dormitory_details.dart';
 
 class SelectPropertyTypeScreen extends StatefulWidget {
   const SelectPropertyTypeScreen({super.key});
@@ -117,7 +117,7 @@ class _SelectPropertyTypeScreenState extends State<SelectPropertyTypeScreen> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DormitoryDataScreen(),
+                      builder: (context) => DormitoryDetailsPage(),
                     ),
                   );
                 } else {

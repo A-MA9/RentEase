@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Renteae',
+      title: 'RentEase',
       theme: ThemeData(primarySwatch: Colors.brown),
       home: const SplashScreen(),
     );
