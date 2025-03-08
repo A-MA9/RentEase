@@ -8,9 +8,9 @@ def init_database():
     # Connect to default postgres database to create our app database
     conn = psycopg2.connect(
         host="localhost",
-        database="postgres",
+        database="rentease",
         user="postgres",
-        password="aman"  # Change this to your actual password
+        password="9311"  # Updated password
     )
     conn.autocommit = True
     cursor = conn.cursor()
@@ -31,7 +31,7 @@ def init_database():
         host="localhost",
         database="rentease",
         user="postgres",
-        password="aman"  # Change this to your actual password
+        password="9311"  # Updated password
     )
     cursor = conn.cursor()
     
@@ -100,6 +100,35 @@ def init_database():
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    # Insert sample properties data
+    conn = psycopg2.connect(
+        host="localhost",
+        database="rentease",
+        user="postgres",
+        password="9311"  # Updated password
+    )
+    cursor = conn.cursor()
+    
+    # Sample properties in Jaipur
+    sample_properties = [
+        ("Property in Kalyan Circle", "Beautiful property for rent", "Apartment", 1000, "Jaipur Jaipur city, Kalyan Circle", 15000, 3),
+        ("Property in Sanganer", "Spacious living space", "House", 1200, "Jaipur Jaipur city, Sanganer", 18000, 6),
+        ("Property in Badi Chaupar", "Historic location property", "Apartment", 800, "Jaipur Jaipur city, Badi Chaupar", 12000, 3),
+        ("Property in Sindhi Camp", "Well-connected property", "PG", 500, "Jaipur Jaipur, Sindhi Camp", 8000, 1)
+    ]
+    
+    # Insert properties with a default owner_id of 1 (you may need to adjust this)
+    for prop in sample_properties:
+        cursor.execute("""
+        INSERT INTO properties (owner_id, title, description, property_type, size_sqft, location, price_per_month, min_stay_months)
+        VALUES (1, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT DO NOTHING
+        """, prop)
     
     conn.commit()
     cursor.close()

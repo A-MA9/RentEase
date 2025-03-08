@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'search_page.dart'; // Import the search page
 import 'home_page.dart'; // Import the home page
 
@@ -12,7 +15,34 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _locationPermissionGranted = false;
-  List<Map<String, String>> _nearbyRentals = [];
+  List<dynamic> _nearbyRentals = [];
+  bool _isLoading = false;
+  String? _error;
+
+  // Get the base URL based on platform
+  String get _baseUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000';
+    }
+    return 'http://10.0.2.2:8000';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLocationPermission();
+  }
+
+  void _checkLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.always || 
+        permission == LocationPermission.whileInUse) {
+      setState(() {
+        _locationPermissionGranted = true;
+      });
+      _loadNearbyRentals();
+    }
+  }
 
   void _requestLocationPermission() async {
     LocationPermission permission = await Geolocator.requestPermission();
@@ -20,24 +50,159 @@ class _HomeScreenState extends State<HomeScreen> {
         permission == LocationPermission.whileInUse) {
       setState(() {
         _locationPermissionGranted = true;
-        _loadNearbyRentals();
+      });
+      _loadNearbyRentals();
+    }
+  }
+
+  void _loadNearbyRentals() async {
+    if (!_locationPermissionGranted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      print('Fetching properties from: ${_baseUrl}/properties/nearby');
+      
+      final response = await http.get(
+        Uri.parse('${_baseUrl}/properties/nearby'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+      
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final decodedData = json.decode(response.body);
+        print('Decoded data: $decodedData');
+        setState(() {
+          _nearbyRentals = decodedData;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load properties: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      print('Error loading properties: $e');
+      print('Stack trace: $stackTrace');
+      setState(() {
+        _error = 'Error loading properties. Please try again.';
+        _isLoading = false;
       });
     }
   }
 
-  void _loadNearbyRentals() {
-    _nearbyRentals = [
-      {"name": "Cozy Studio Apartment", "location": "Downtown"},
-      {"name": "Luxury 2BHK Flat", "location": "City Center"},
-      {"name": "Budget PG", "location": "Near University"},
-      {"name": "Spacious Villa", "location": "Suburban Area"},
-    ];
-  }
+  Widget _buildPropertyList() {
+    if (!_locationPermissionGranted) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.location_off,
+                size: 64,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Location permission required",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Please enable location to see rentals near you",
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _requestLocationPermission,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                ),
+                child: const Text("Enable Location"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-  void _navigateToSearch() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SearchPage()),
+    if (_isLoading) {
+      return const Expanded(
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadNearbyRentals,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_nearbyRentals.isEmpty) {
+      return const Expanded(
+        child: Center(
+          child: Text('No properties available in your area.'),
+        ),
+      );
+    }
+
+    return Expanded(
+      child: ListView.builder(
+        itemCount: _nearbyRentals.length,
+        itemBuilder: (context, index) {
+          final rental = _nearbyRentals[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            child: ListTile(
+              leading: const Icon(Icons.home, color: Colors.brown),
+              title: Text(rental['location']),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(rental['title']),
+                  Text(rental['property_type']),
+                  Text('₹${rental['price_per_month']} per month'),
+                ],
+              ),
+              isThreeLine: true,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -48,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -56,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-        title: Text(
+        title: const Text(
           "Find Your Rental",
           style: TextStyle(
             fontSize: 20,
@@ -77,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(30),
                 ),
-                child: TextField(
+                child: const TextField(
                   decoration: InputDecoration(
                     hintText: 'Search for rentals...',
                     prefixIcon: Icon(Icons.search, color: Colors.brown),
@@ -91,61 +256,44 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.my_location, color: Colors.brown),
-              title: Text("My Current Location"),
+              leading: const Icon(Icons.my_location, color: Colors.brown),
+              title: const Text("My Current Location"),
               onTap: _requestLocationPermission,
             ),
-            SizedBox(height: 10),
-            Text(
+            const SizedBox(height: 10),
+            const Text(
               "Popular Locations",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8.0,
               children: [
                 GestureDetector(
-                  onTap: _navigateToSearch,
-                  child: Chip(label: Text("Jaipur")),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SearchPage()),
+                  ),
+                  child: const Chip(label: Text("Jaipur")),
                 ),
-                Chip(label: Text("Gandhi Market")),
-                Chip(label: Text("Bagru")),
+                const Chip(label: Text("Gandhi Market")),
+                const Chip(label: Text("Bagru")),
               ],
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               "Popular Rentals Near You",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
-            SizedBox(height: 10),
-            _locationPermissionGranted
-                ? Expanded(
-                  child: ListView.builder(
-                    itemCount: _nearbyRentals.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: Icon(Icons.home, color: Colors.brown),
-                        title: Text(_nearbyRentals[index]["name"]!),
-                        subtitle: Text(_nearbyRentals[index]["location"]!),
-                      );
-                    },
-                  ),
-                )
-                : Column(
-                  children: [
-                    Text(
-                      "Turn on location to see rentals near you.",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 10),
+            _buildPropertyList(),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.brown,
         unselectedItemColor: Colors.grey,
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),

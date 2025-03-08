@@ -39,3 +39,19 @@ class MessageResponse(MessageBase):
 
     class Config:
         orm_mode = True
+
+class PropertyResponse(BaseModel):
+    id: int
+    owner_id: int
+    title: str
+    description: Optional[str]
+    property_type: str
+    size_sqft: Optional[float]
+    location: str
+    price_per_month: float
+    min_stay_months: int
+    is_available: bool
+    created_at: str
+
+    class Config:
+        orm_mode = True
