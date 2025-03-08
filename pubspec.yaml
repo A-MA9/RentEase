@@ -2,11 +2,7 @@ name: flutter_app_2
 description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-<<<<<<< HEAD
-publish_to: "none" # Remove this line if you wish to publish to pub.dev
-=======
 publish_to: none # Remove this line if you wish to publish to pub.dev
->>>>>>> 388d9caa0bc1007f409aa15fe51ff60efb5e3988
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -37,15 +33,11 @@ dependencies:
   
   font_awesome_flutter: ^10.6.0
   lucide_icons: ^0.257.0
-<<<<<<< HEAD
-  http: ^0.13.6
-  geolocator: ^9.0.2
-=======
   http: ^1.3.0
   image_picker: ^1.0.7
-
   geolocator: ^13.0.2
->>>>>>> 388d9caa0bc1007f409aa15fe51ff60efb5e3988
+  table_calendar: ^3.0.9
+  im_stepper: ^1.0.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

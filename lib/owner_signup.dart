@@ -40,20 +40,24 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
     try {
       // Generate OTP
       final otp = OtpService.generateOtp();
-      
+
       // Send OTP via email
       final otpSent = await OtpService.sendOtp(
         email: _emailController.text,
         name: _nameController.text,
         otp: otp,
       );
-      
+
       if (!otpSent) {
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send verification email. Please try again.')),
+          const SnackBar(
+            content: Text(
+              'Failed to send verification email. Please try again.',
+            ),
+          ),
         );
         return;
       }
@@ -84,11 +88,12 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VerificationScreen(
-              userType: 1,
-              email: _emailController.text,
-              fullName: _nameController.text,
-            ),
+            builder:
+                (context) => VerificationScreen(
+                  userType: 1,
+                  email: _emailController.text,
+                  fullName: _nameController.text,
+                ),
           ),
         );
       } else {
@@ -244,7 +249,12 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => VerificationScreen(userType: 1),
+                          builder:
+                              (context) => VerificationScreen(
+                                userType: 1,
+                                email: _emailController.text,
+                                fullName: _nameController.text,
+                              ),
                         ),
                       );
                     },

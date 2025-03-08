@@ -5,6 +5,7 @@ from psycopg2.extras import RealDictCursor
 from passlib.context import CryptContext
 from . import models
 from .database import get_db_connection
+from typing import List
 
 app = FastAPI(title="RentEase API")
 
@@ -115,3 +116,37 @@ async def get_users():
     conn.close()
     
     return users
+
+
+@app.post("/messages", response_model=models.MessageResponse, status_code=status.HTTP_201_CREATED)
+async def send_message(message: models.MessageCreate):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+    INSERT INTO messages (sender_id, receiver_id, message)
+    VALUES (%s, %s, %s) RETURNING id, sender_id, receiver_id, message, timestamp
+    """, (message.sender_id, message.receiver_id, message.message))
+    
+    new_message = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return new_message
+
+
+@app.get("/messages/{user_id}", response_model=List[models.MessageResponse])
+async def get_messages(user_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT * FROM messages WHERE sender_id = %s OR receiver_id = %s ORDER BY timestamp ASC
+    """, (user_id, user_id))
+
+    messages = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return messages

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'check_in.dart';
 
 class RoomDetailsPage extends StatelessWidget {
   @override
@@ -136,7 +137,14 @@ class RoomDetailsPage extends StatelessWidget {
                           ),
                           SizedBox(width: 10),
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CheckInDatePage(),
+                                ),
+                              );
+                            },
                             child: Text(
                               "Check Out",
                               style: TextStyle(color: Colors.white),
