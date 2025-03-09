@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'check_in.dart';
+import 'chat_owner.dart';
 
 class RoomDetailsPage extends StatelessWidget {
   @override
@@ -129,7 +130,14 @@ class RoomDetailsPage extends StatelessWidget {
                       Row(
                         children: [
                           OutlinedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatApp(),
+                                ),
+                              );
+                            },
                             child: Text(
                               "Chat Owner",
                               style: TextStyle(color: Colors.black),
