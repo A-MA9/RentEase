@@ -408,12 +408,12 @@
 //     );
 //   }
 // }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'check_in.dart';
 import 'chat_owner.dart';
 import 'login.dart';
+import 'panorama.dart'; // Import your 3D Page
 
 class RoomDetailsPage extends StatelessWidget {
   final FlutterSecureStorage storage = const FlutterSecureStorage();
@@ -488,11 +488,42 @@ class RoomDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              'assets/dorm1.jpg',
-              width: double.infinity,
-              height: 250,
-              fit: BoxFit.cover,
+            Stack(
+              children: [
+                Image.asset(
+                  'assets/dorm1.jpg',
+                  width: double.infinity,
+                  height: 250,
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.7),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 10,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => PanoramaView()),
+                      );
+                    },
+                    icon: Icon(Icons.threed_rotation, color: Colors.white),
+                    label: Text(
+                      "3D View",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
             ),
             Padding(
               padding: EdgeInsets.all(16.0),

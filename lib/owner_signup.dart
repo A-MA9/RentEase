@@ -244,21 +244,20 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _registerOwner,
-
-                    // onPressed: () {
-                    //   Navigator.pushReplacement(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //       builder:
-                    //           (context) => VerificationScreen(
-                    //             userType: 1,
-                    //             email: _emailController.text,
-                    //             fullName: _nameController.text,
-                    //           ),
-                    //     ),
-                    //   );
-                    // },
+                    // onPressed: _isLoading ? null : _registerOwner,
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => VerificationScreen(
+                                userType: 1,
+                                email: _emailController.text,
+                                fullName: _nameController.text,
+                              ),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       padding: const EdgeInsets.symmetric(vertical: 15),
