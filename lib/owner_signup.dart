@@ -62,7 +62,7 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         return;
       }
 
-      // Use the correct URL based on platform
+      // Correct API URL for local development
       final apiUrl =
           kIsWeb
               ? 'http://localhost:8000/register/owner' // For web
@@ -78,6 +78,10 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
           'password': _passwordController.text,
         }),
       );
+
+      // Debugging: Print response status & body
+      print("Response Status: ${response.statusCode}");
+      print("Response Body: ${response.body}");
 
       setState(() {
         _isLoading = false;
@@ -107,6 +111,7 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
       setState(() {
         _isLoading = false;
       });
+      print("Error: ${e.toString()}");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
@@ -244,20 +249,20 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    // onPressed: _isLoading ? null : _registerOwner,
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => VerificationScreen(
-                                userType: 1,
-                                email: _emailController.text,
-                                fullName: _nameController.text,
-                              ),
-                        ),
-                      );
-                    },
+                    onPressed: _isLoading ? null : _registerOwner,
+                    // onPressed: () {
+                    //   Navigator.pushReplacement(
+                    //     context,
+                    //     MaterialPageRoute(
+                    //       builder:
+                    //           (context) => VerificationScreen(
+                    //             userType: 1,
+                    //             email: _emailController.text,
+                    //             fullName: _nameController.text,
+                    //           ),
+                    //     ),
+                    //   );
+                    // },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       padding: const EdgeInsets.symmetric(vertical: 15),

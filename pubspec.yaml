@@ -46,6 +46,9 @@ dependencies:
   random_string: ^2.3.1
   shared_preferences: ^2.2.2
   panorama: ^0.4.1
+  geocoding: ^2.1.1
+  socket_io_client: ^2.0.3+1
+
 
 dev_dependencies:
   flutter_test:
