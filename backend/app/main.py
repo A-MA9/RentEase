@@ -25,9 +25,11 @@ app = FastAPI(title="RentEase API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,  # Changed to True to support auth headers
+    allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
+    expose_headers=["*"],  # Expose all headers
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # OAuth2 scheme for token handling
@@ -106,6 +108,7 @@ async def startup_db_client():
         sender_id INTEGER REFERENCES users(id),
         receiver_id INTEGER REFERENCES users(id),
         message TEXT NOT NULL,
+        message_type VARCHAR(20) NOT NULL DEFAULT 'text',
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -266,24 +269,39 @@ async def get_nearby_properties():
 async def get_chat_history(
     user_id: int, current_user: models.UserInDB = Depends(get_current_user)
 ):
+    print(f"Fetching chat history for user {current_user.id} with {user_id}")
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    cursor.execute(
-        """
-        SELECT * FROM messages 
-        WHERE (sender_id = %s AND receiver_id = %s) 
-           OR (sender_id = %s AND receiver_id = %s)
-        ORDER BY timestamp ASC
-        """,
-        (current_user.id, user_id, user_id, current_user.id),
-    )
-    
-    messages = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    return messages
+    try:
+        cursor.execute(
+            """
+            SELECT id, sender_id, receiver_id, message, message_type,
+                   to_char(timestamp, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as timestamp
+            FROM messages 
+            WHERE (sender_id = %s AND receiver_id = %s) 
+               OR (sender_id = %s AND receiver_id = %s)
+            ORDER BY timestamp ASC
+            """,
+            (current_user.id, user_id, user_id, current_user.id),
+        )
+        
+        messages = cursor.fetchall()
+        print(f"Found {len(messages)} messages")
+        
+        # Convert messages to list of dicts with properly formatted timestamps
+        formatted_messages = []
+        for msg in messages:
+            msg_dict = dict(msg)
+            formatted_messages.append(msg_dict)
+            
+        return formatted_messages
+    except Exception as e:
+        print(f"Error fetching messages: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
 
 # ✅ Request Body Model
 class MessageCreate(BaseModel):
@@ -291,28 +309,33 @@ class MessageCreate(BaseModel):
     message: str
 
 # ✅ Send Message Endpoint
-@app.post("/messages/send")
+@app.post("/messages/send", status_code=201)
 async def send_message(
     message_data: MessageCreate,  
-    current_user: Dict = Depends(get_current_user)  # 🔹 Extract sender_id from token
+    current_user: models.UserInDB = Depends(get_current_user)
 ):
+    print(f"Sending message from user {current_user.id} to {message_data.receiver_id}")
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
         cursor.execute(
             """
-            INSERT INTO messages (sender_id, receiver_id, message, timestamp)
+            INSERT INTO messages (sender_id, receiver_id, message, message_type)
             VALUES (%s, %s, %s, %s)
+            RETURNING id, sender_id, receiver_id, message, message_type,
+                    to_char(timestamp, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as timestamp
             """,
-            (current_user.id, message_data.receiver_id, message_data.message, datetime.utcnow()),
+            (current_user.id, message_data.receiver_id, message_data.message, 'text'),
         )
+        new_message = cursor.fetchone()
         conn.commit()
+        print(f"Message sent successfully: {new_message}")
+        return new_message
     except Exception as e:
         conn.rollback()
+        print(f"Error sending message: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         cursor.close()
         conn.close()
-
-    return {"status": "Message sent successfully"}

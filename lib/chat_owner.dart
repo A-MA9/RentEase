@@ -17,6 +17,8 @@ class _ChatPageState extends State<ChatPage> {
   List<Map<String, dynamic>> messages = [];
   TextEditingController messageController = TextEditingController();
   String? token;
+  int retryCount = 0;
+  static const maxRetries = 3;
 
   @override
   void initState() {
@@ -24,10 +26,9 @@ class _ChatPageState extends State<ChatPage> {
     _loadToken(); // Fetch token when the page loads
   }
 
-  final apiUrl =
-      kIsWeb
-          ? 'http://localhost:8000/chat' // For web
-          : 'http://10.0.2.2:8000/chat'; // For Android emulator
+  final baseUrl = kIsWeb
+      ? 'http://localhost:8000' // For web
+      : 'http://10.0.2.2:8000'; // For Android emulator
 
   Future<void> _loadToken() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");
@@ -44,47 +45,87 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> fetchMessages() async {
     if (token == null) return;
+    if (retryCount >= maxRetries) {
+      print("Max retries reached for fetching messages");
+      return;
+    }
 
-    final url = Uri.parse(
-      "http://localhost:8000/messages/${widget.receiverId}",
-    );
+    final url = Uri.parse("$baseUrl/messages/${widget.receiverId}");
+    print("Fetching messages from: $url");
+    print("Using token: $token");
 
-    final response = await http.get(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-    );
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        messages = List<Map<String, dynamic>>.from(json.decode(response.body));
-      });
-    } else {
-      print("Failed to load messages: ${response.body}");
+      print("Response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedMessages = json.decode(response.body);
+        if (mounted) {
+          setState(() {
+            messages = List<Map<String, dynamic>>.from(decodedMessages);
+            retryCount = 0; // Reset retry count on success
+          });
+        }
+      } else {
+        print("Failed to load messages: ${response.body}");
+        print("Status code: ${response.statusCode}");
+        retryCount++;
+        if (mounted && retryCount < maxRetries) {
+          await Future.delayed(Duration(seconds: 2));
+          fetchMessages();
+        }
+      }
+    } catch (e) {
+      print("Error fetching messages: $e");
+      retryCount++;
+      if (mounted && retryCount < maxRetries) {
+        await Future.delayed(Duration(seconds: 2));
+        fetchMessages();
+      }
     }
   }
 
   Future<void> sendMessage(String message) async {
     if (token == null) return;
 
-    final url = Uri.parse("http://localhost:8000/messages/send");
+    final url = Uri.parse("$baseUrl/messages/send");
+    print("Sending message to: $url");
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({"receiver_id": widget.receiverId, "message": message}),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "receiver_id": widget.receiverId,
+          "message": message,
+          "message_type": "text"
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      fetchMessages();
-      messageController.clear();
-    } else {
-      print("Failed to send message: ${response.body}");
+      print("Send message response status: ${response.statusCode}");
+      print("Send message response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        messageController.clear();
+        retryCount = 0; // Reset retry count before fetching messages
+        await fetchMessages();
+      } else {
+        print("Failed to send message: ${response.body}");
+        print("Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error sending message: $e");
     }
   }
 
@@ -97,21 +138,51 @@ class _ChatPageState extends State<ChatPage> {
           Expanded(
             child: ListView.builder(
               itemCount: messages.length,
+              reverse: false, // Keep messages in chronological order
               itemBuilder: (context, index) {
                 final msg = messages[index];
-                final isMe =
-                    msg['sender_id'] != widget.receiverId; // Correct check
-                return Align(
-                  alignment:
-                      isMe ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                    padding: EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isMe ? Colors.grey[300] : Colors.blue[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(msg['message']),
+                final isMe = msg['sender_id'] != widget.receiverId;
+                
+                // Format timestamp
+                DateTime timestamp = DateTime.parse(msg['timestamp']);
+                String formattedTime = "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blue[100] : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg['message'],
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              formattedTime,
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -124,16 +195,34 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: TextField(
                     controller: messageController,
-                    decoration: InputDecoration(hintText: "Type a message..."),
+                    decoration: InputDecoration(
+                      hintText: "Type a message...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    onSubmitted: (text) {
+                      if (text.isNotEmpty) {
+                        sendMessage(text);
+                      }
+                    },
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    if (messageController.text.isNotEmpty) {
-                      sendMessage(messageController.text);
-                    }
-                  },
+                SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.send, color: Colors.white),
+                    onPressed: () {
+                      if (messageController.text.isNotEmpty) {
+                        sendMessage(messageController.text);
+                      }
+                    },
+                  ),
                 ),
               ],
             ),

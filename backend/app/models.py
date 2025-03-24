@@ -106,6 +106,7 @@ class MessageBase(BaseModel):
     sender_id: int
     receiver_id: int
     message: str
+    message_type: str = 'text'
 
 class MessageCreate(MessageBase):
     pass
@@ -116,6 +117,9 @@ class MessageResponse(MessageBase):
 
     class Config:
         orm_mode = True
+        json_encoders = {
+            datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        }
 
 class PropertyResponse(BaseModel):
     id: int
