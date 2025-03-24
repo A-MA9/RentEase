@@ -339,3 +339,39 @@ async def send_message(
     finally:
         cursor.close()
         conn.close()
+        
+#Retrieve chats
+@app.get("/chats", response_model=List[dict])
+async def get_user_chats(current_user: models.UserInDB = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    query = """
+    SELECT DISTINCT ON (CASE 
+        WHEN sender_id = %(user_id)s THEN receiver_id 
+        ELSE sender_id 
+    END) 
+    CASE 
+        WHEN sender_id = %(user_id)s THEN receiver_id 
+        ELSE sender_id 
+    END AS chat_partner_id,
+    users.full_name AS chat_partner_name,
+    messages.message, 
+    messages.timestamp
+    FROM messages 
+    JOIN users ON users.id = CASE 
+        WHEN sender_id = %(user_id)s THEN receiver_id 
+        ELSE sender_id 
+    END
+    WHERE sender_id = %(user_id)s OR receiver_id = %(user_id)s 
+    ORDER BY chat_partner_id, messages.timestamp DESC;
+    """
+    
+    cursor.execute(query, {"user_id": current_user.id})
+    chat_list = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return chat_list
+

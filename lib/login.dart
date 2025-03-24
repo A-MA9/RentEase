@@ -4,9 +4,10 @@ import 'package:flutter_app_2/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'signup.dart';
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/flutter_storage.dart';
+import 'home_page_owner.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 // Secure storage for JWT token
 final storage = FlutterSecureStorage();
@@ -24,7 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  // Function to handle login API request
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
@@ -32,16 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final String email = emailController.text.trim();
     final String password = passwordController.text.trim();
-
-    // String getBaseUrl() {
-    //   if (Platform.isAndroid) {
-    //     return 'http://10.0.2.2:8000'; // For Android Emulator
-    //   } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    //     return 'http://127.0.0.1:8000'; // For Windows or Desktop
-    //   } else {
-    //     return 'http://127.0.0.1:8000'; // Default (for Web)
-    //   }
-    // }
 
     if (email.isEmpty || password.isEmpty) {
       _showErrorDialog("Email and password cannot be empty.");
@@ -51,11 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Use the correct URL for web
     final apiUrl =
-        kIsWeb
-            ? 'http://localhost:8000/login' // For web
-            : 'http://10.0.2.2:8000/login'; // For Android emulator
+        kIsWeb ? 'http://localhost:8000/login' : 'http://10.0.2.2:8000/login';
 
     final response = await http.post(
       Uri.parse(apiUrl),
@@ -63,50 +50,52 @@ class _LoginScreenState extends State<LoginScreen> {
       body: {'username': email, 'password': password},
     );
 
-    // final url = Uri.parse('${getBaseUrl()}/login'); // Use the dynamic base URL
-    // // Replace with actual API URL
-    // final response = await http.post(
-    //   url,
-    //   headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    //   body: {'username': email, 'password': password},
-    // );
-
     setState(() {
       _isLoading = false;
     });
 
     if (response.statusCode == 200) {
-      //   SharedPreferences prefs = await SharedPreferences.getInstance();
-      //   prefs.setBool("isLoggedIn", true);
       final data = jsonDecode(response.body);
+      String token = data['access_token'];
 
-      // Store JWT token and user type securely
-      await SecureStorage.storage.write(
-        key: 'access_token',
-        value: data['access_token'],
-      );
-      await SecureStorage.storage.write(
-        key: 'user_type',
-        value: data['user_type'],
-      );
-      await SecureStorage.storage.write(
-        key: 'user_id',
-        value: data['user_id'].toString(),
-      );
+      // ✅ Store the token
+      await SecureStorage.storage.write(key: 'access_token', value: token);
+      print("🔹 Token Stored: $token");
 
-      print("🔹 Token Stored: ${data['access_token']}");
+      // ✅ Decode the token to extract `user_type`
+      try {
+        final jwt = JWT.decode(token);
+        String? userType = jwt.payload['user_type'];
+        int? userId = jwt.payload['user_id'];
 
-      // Navigate based on user type
-      if (data['user_type'] == 'owner') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        if (userType != null && userId != null) {
+          await SecureStorage.storage.write(key: 'user_type', value: userType);
+          await SecureStorage.storage.write(
+            key: 'user_id',
+            value: userId.toString(),
+          );
+          print("🔹 Decoded User Type: $userType");
+          print("🔹 Decoded User ID: $userId");
+
+          // ✅ Navigate based on user type
+          if (userType == 'owner') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePageOwner()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
+          }
+        } else {
+          print("❌ Failed to decode user_type or user_id");
+          _showErrorDialog("Failed to retrieve user information.");
+        }
+      } catch (e) {
+        print("❌ JWT Decode Error: $e");
+        _showErrorDialog("Invalid token received.");
       }
     } else {
       _showErrorDialog("Invalid email or password.");

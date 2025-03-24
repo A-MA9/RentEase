@@ -181,7 +181,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'home_screen.dart';
+import 'home_page_owner.dart';
 
 class DormitoryDetailsPage extends StatefulWidget {
   @override
@@ -276,7 +276,7 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    MaterialPageRoute(builder: (context) => HomePageOwner()),
                   );
                 },
                 child: Text("Continue", style: TextStyle(color: Colors.white)),

@@ -48,6 +48,8 @@ dependencies:
   panorama: ^0.4.1
   geocoding: ^2.1.1
   socket_io_client: ^2.0.3+1
+  dio: ^5.0.0
+  dart_jsonwebtoken: ^2.8.0
 
 
 dev_dependencies:
