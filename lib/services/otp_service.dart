@@ -3,12 +3,16 @@ import 'package:random_string/random_string.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class OtpService {
   // EmailJS credentials
   static const String serviceId = 'service_n910zan';
   static const String templateId = 'template_q77fc9v';
   static const String publicKey = '-rssrvgAJxzUu8WeH';
+  
+  // Secure storage instance
+  static final storage = FlutterSecureStorage();
   
   // Generate a 6-digit OTP
   static String generateOtp() {

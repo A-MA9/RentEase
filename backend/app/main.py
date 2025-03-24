@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, Security
+from fastapi import FastAPI, HTTPException, Depends, status, Security, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import psycopg2
@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 import jwt
 from jwt.exceptions import PyJWTError
 from typing import Dict
+import random
 
 # JWT Configuration
 SECRET_KEY = "your-secret-key-change-this-in-production"  # Use a strong secret key in production
@@ -375,3 +376,153 @@ async def get_user_chats(current_user: models.UserInDB = Depends(get_current_use
     
     return chat_list
 
+
+# Add this class near the top with other Pydantic models
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+# Password reset request endpoint
+@app.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Check if user exists
+        cursor.execute("SELECT id, full_name FROM users WHERE email = %s", (request.email,))
+        user = cursor.fetchone()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Generate OTP
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
+        # Store OTP in database with expiration
+        cursor.execute(
+            """
+            INSERT INTO password_reset_otps (user_id, otp, expires_at)
+            VALUES (%s, %s, NOW() + INTERVAL '10 minutes')
+            """,
+            (user['id'], otp)
+        )
+        conn.commit()
+        
+        # Print OTP in a visible way
+        print("\n" + "="*50)
+        print(f"Password Reset OTP for {request.email}")
+        print(f"OTP: {otp}")
+        print("="*50 + "\n")
+        
+        return {"message": "OTP sent successfully"}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+# Add this class near other Pydantic models
+class VerifyOtpRequest(BaseModel):
+    email: str
+    otp: str
+
+# Verify OTP endpoint
+@app.post("/verify-reset-otp")
+async def verify_reset_otp(request: VerifyOtpRequest):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Get user and latest OTP
+        cursor.execute(
+            """
+            SELECT u.id, u.full_name, pro.otp, pro.expires_at
+            FROM users u
+            JOIN password_reset_otps pro ON u.id = pro.user_id
+            WHERE u.email = %s
+            AND pro.expires_at > NOW()
+            ORDER BY pro.created_at DESC
+            LIMIT 1
+            """,
+            (request.email,)
+        )
+        result = cursor.fetchone()
+        
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired OTP"
+            )
+        
+        if result['otp'] != request.otp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid OTP"
+            )
+        
+        # Generate reset token
+        reset_token = create_access_token(
+            data={"user_id": result['id'], "email": request.email},
+            expires_delta=timedelta(minutes=15)
+        )
+        
+        return {"reset_token": reset_token}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+# Add this class near other Pydantic models
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+# Reset password endpoint
+@app.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    current_user: models.UserInDB = Depends(get_current_user)
+):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Hash new password
+        hashed_password = hash_password(request.new_password)
+        
+        # Update password
+        cursor.execute(
+            "UPDATE users SET password = %s WHERE id = %s",
+            (hashed_password, current_user.id)
+        )
+        
+        # Delete used OTPs
+        cursor.execute(
+            "DELETE FROM password_reset_otps WHERE user_id = %s",
+            (current_user.id,)
+        )
+        
+        conn.commit()
+        return {"message": "Password reset successfully"}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    finally:
+        cursor.close()
+        conn.close()

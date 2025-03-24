@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/flutter_storage.dart';
 import 'home_page_owner.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'forgot_password.dart';
 
 // Secure storage for JWT token
 final storage = FlutterSecureStorage();
@@ -221,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don’t have an account?"),
+                const Text("Don't have an account?"),
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
@@ -246,7 +247,10 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: TextButton(
                 onPressed: () {
-                  // Handle Forgot Password
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+                  );
                 },
                 child: const Text(
                   "Forget Password?",

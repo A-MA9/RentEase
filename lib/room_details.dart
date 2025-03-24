@@ -59,7 +59,7 @@ class RoomDetailsPage extends StatelessWidget {
       return;
     }
 
-    int roomOwnerId = 6; // The fixed owner ID
+    int roomOwnerId = 2; // The fixed owner ID
 
     // Navigate to ChatScreen and pass sender and receiver IDs
     Navigator.push(
