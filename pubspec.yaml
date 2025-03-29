@@ -38,18 +38,19 @@ dependencies:
   geolocator: ^13.0.2
   table_calendar: ^3.0.9
   im_stepper: ^1.0.1
-  flutter_secure_storage: ^5.0.0
+  flutter_secure_storage: ^9.0.0
   provider: ^6.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   random_string: ^2.3.1
   shared_preferences: ^2.2.2
-  panorama: ^0.4.1
-  geocoding: ^2.1.1
-  socket_io_client: ^2.0.3+1
+  # panorama: ^0.4.1
+  geocoding: ^3.0.0
+  socket_io_client: ^3.0.2
   dio: ^5.0.0
-  dart_jsonwebtoken: ^2.8.0
+  dart_jsonwebtoken: ^3.2.0
+  panorama_viewer: ^2.0.4
 
 
 dev_dependencies:
@@ -112,3 +113,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+

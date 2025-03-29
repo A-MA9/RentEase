@@ -26,9 +26,10 @@ class _ChatPageState extends State<ChatPage> {
     _loadToken(); // Fetch token when the page loads
   }
 
-  final baseUrl = kIsWeb
-      ? 'http://localhost:8000' // For web
-      : 'http://10.0.2.2:8000'; // For Android emulator
+  final baseUrl =
+      kIsWeb
+          ? 'http://localhost:8000' // For web
+          : 'http://10.0.2.2:8000'; // For Android emulator
 
   Future<void> _loadToken() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");
@@ -109,7 +110,7 @@ class _ChatPageState extends State<ChatPage> {
         body: jsonEncode({
           "receiver_id": widget.receiverId,
           "message": message,
-          "message_type": "text"
+          "message_type": "text",
         }),
       );
 
@@ -142,15 +143,22 @@ class _ChatPageState extends State<ChatPage> {
               itemBuilder: (context, index) {
                 final msg = messages[index];
                 final isMe = msg['sender_id'] != widget.receiverId;
-                
+
                 // Format timestamp
                 DateTime timestamp = DateTime.parse(msg['timestamp']);
-                String formattedTime = "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
-                
+                String formattedTime =
+                    "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 8,
+                  ),
                   child: Column(
-                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                     children: [
                       Container(
                         constraints: BoxConstraints(
@@ -160,9 +168,15 @@ class _ChatPageState extends State<ChatPage> {
                           color: isMe ? Colors.blue[100] : Colors.grey[200],
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         child: Column(
-                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
                           children: [
                             Text(
                               msg['message'],
@@ -200,7 +214,10 @@ class _ChatPageState extends State<ChatPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                     ),
                     onSubmitted: (text) {
                       if (text.isNotEmpty) {

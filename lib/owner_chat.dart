@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'services/flutter_storage.dart';
@@ -18,6 +19,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     fetchChats();
   }
 
+  final baseUrl =
+      kIsWeb
+          ? 'http://localhost:8000' // For web
+          : 'http://10.0.2.2:8000'; // For Android emulator
+
   Future<void> fetchChats() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");
 
@@ -28,7 +34,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
     try {
       final response = await Dio().get(
-        'http://localhost:8000/chats', // ✅ Use proper URL for Android Emulator
+        '$baseUrl/chats', // ✅ Use proper URL for Android Emulator
         options: Options(headers: {"Authorization": "Bearer $savedToken"}),
       );
       setState(() {
