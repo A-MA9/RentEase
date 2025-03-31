@@ -3,6 +3,19 @@ import 'package:flutter/services.dart';
 import 'payment_success_page.dart';
 
 class PaymentPage extends StatefulWidget {
+  final String dormitoryName;
+  final String ownerEmail;
+  final DateTime checkInDate;
+  final double totalAmount;
+
+  const PaymentPage({
+    Key? key,
+    required this.dormitoryName,
+    required this.ownerEmail,
+    required this.checkInDate,
+    required this.totalAmount,
+  }) : super(key: key);
+
   @override
   _PaymentPageState createState() => _PaymentPageState();
 }
@@ -233,10 +246,17 @@ class _PaymentPageState extends State<PaymentPage> {
       isProcessing = false;
     });
 
-    // Navigate to success page
+    // Navigate to success page with booking information
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => PaymentSuccessPage()),
+      MaterialPageRoute(
+        builder: (context) => PaymentSuccessPage(
+          dormitoryName: widget.dormitoryName,
+          ownerEmail: widget.ownerEmail,
+          checkInDate: widget.checkInDate,
+          totalAmount: widget.totalAmount,
+        ),
+      ),
     );
   }
 } 

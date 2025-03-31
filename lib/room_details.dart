@@ -8,6 +8,12 @@ import 'services/flutter_storage.dart';
 
 class RoomDetailsPage extends StatelessWidget {
   final FlutterSecureStorage storage = const FlutterSecureStorage();
+  final Map<String, dynamic> dormitory;
+
+  const RoomDetailsPage({
+    Key? key,
+    required this.dormitory,
+  }) : super(key: key);
 
   Future<bool> _isUserLoggedIn() async {
     String? token = await SecureStorage.storage.read(key: "access_token");
@@ -138,7 +144,7 @@ class RoomDetailsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "VIP Dormitory Mansrovar Type A",
+                    dormitory['title'] ?? "VIP Dormitory Mansrovar Type A",
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 5),
@@ -154,13 +160,13 @@ class RoomDetailsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          "Woman",
+                          dormitory['property_type'] ?? "Woman",
                           style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
                       SizedBox(width: 10),
                       Icon(Icons.location_on, color: Colors.grey),
-                      Text("Central Samanabad"),
+                      Text(dormitory['location'] ?? "Central Samanabad"),
                     ],
                   ),
                   SizedBox(height: 10),
@@ -184,7 +190,7 @@ class RoomDetailsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Dormitory managed by Virat",
+                            "Dormitory managed by ${dormitory['owner_name'] ?? 'Virat'}",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text(
@@ -202,7 +208,7 @@ class RoomDetailsPage extends StatelessWidget {
                   ),
                   SizedBox(height: 5),
                   Text(
-                    "This dormitory consists of 2 rooms, Room type A (VIP) is at the top with windows facing outside and towards the corridor.\n\nThere is also a regular AC cleaning service every 3 months. If you need help, you can contact the guard on duty 24/7.",
+                    dormitory['description'] ?? "This dormitory consists of 2 rooms, Room type A (VIP) is at the top with windows facing outside and towards the corridor.\n\nThere is also a regular AC cleaning service every 3 months. If you need help, you can contact the guard on duty 24/7.",
                     style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                   SizedBox(height: 20),
@@ -213,7 +219,7 @@ class RoomDetailsPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "₹ 5000/month",
+                            "₹ ${dormitory['price_per_month'] ?? '5000'}/month",
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -240,7 +246,11 @@ class RoomDetailsPage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CheckInDatePage(),
+                                  builder: (context) => CheckInDatePage(
+                                    dormitoryName: dormitory['title'] ?? 'Unknown Dormitory',
+                                    ownerEmail: dormitory['owner_email'] ?? '',
+                                    totalAmount: double.parse(dormitory['price_per_month']?.toString() ?? '0'),
+                                  ),
                                 ),
                               );
                             },

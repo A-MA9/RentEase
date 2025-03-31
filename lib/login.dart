@@ -63,6 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
       await SecureStorage.storage.write(key: 'access_token', value: token);
       print("🔹 Token Stored: $token");
 
+      // ✅ Store the email
+      await SecureStorage.storage.write(key: 'email', value: email);
+      print("🔹 Email Stored: $email");
+
       // ✅ Decode the token to extract `user_type`
       try {
         final jwt = JWT.decode(token);

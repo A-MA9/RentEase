@@ -3,6 +3,17 @@ import 'package:table_calendar/table_calendar.dart';
 import 'check_out.dart';
 
 class CheckInDatePage extends StatefulWidget {
+  final String dormitoryName;
+  final String ownerEmail;
+  final double totalAmount;
+
+  const CheckInDatePage({
+    Key? key,
+    required this.dormitoryName,
+    required this.ownerEmail,
+    required this.totalAmount,
+  }) : super(key: key);
+
   @override
   _CheckInDatePageState createState() => _CheckInDatePageState();
 }
@@ -99,7 +110,12 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CheckoutPage(selectedDate: _selectedDay),
+                      builder: (context) => CheckoutPage(
+                        selectedDate: _selectedDay,
+                        dormitoryName: widget.dormitoryName,
+                        ownerEmail: widget.ownerEmail,
+                        totalAmount: widget.totalAmount,
+                      ),
                     ),
                   );
                 },

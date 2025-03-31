@@ -5,15 +5,25 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from . import models
+from .models import (
+    UserBase, OwnerCreate, SeekerCreate, UserResponse, Token, 
+    TokenData, TokenUserResponse, UserInDB, MessageBase, 
+    MessageCreate, MessageResponse, PropertyResponse, Booking, 
+    BookingResponse
+)
 from .database import get_db_connection
 from typing import List, Optional
 from fastapi.responses import JSONResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import jwt
 from jwt.exceptions import PyJWTError
 from typing import Dict
 import random
+import os
+from dotenv import load_dotenv
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # JWT Configuration
 SECRET_KEY = "your-secret-key-change-this-in-production"  # Use a strong secret key in production
@@ -81,7 +91,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     
     if user is None:
         raise credentials_exception
-    return models.UserInDB(**user)
+    return UserBase(**user)
 
 # Initialize database tables
 @app.on_event("startup")
@@ -113,13 +123,29 @@ async def startup_db_client():
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    # Create bookings table if it doesn't exist
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        dormitory_name VARCHAR(255) NOT NULL,
+        seeker_email VARCHAR(255) NOT NULL,
+        owner_email VARCHAR(255) NOT NULL,
+        booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        check_in_date DATE NOT NULL,
+        payment_status VARCHAR(50) DEFAULT 'completed',
+        total_amount DECIMAL(10,2) NOT NULL,
+        FOREIGN KEY (seeker_email) REFERENCES users(email),
+        FOREIGN KEY (owner_email) REFERENCES users(email)
+    )
+    """)
     
     conn.commit()
     cursor.close()
     conn.close()
 
 # Authentication endpoint
-@app.post("/login", response_model=models.Token)
+@app.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -151,8 +177,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 # Registration endpoints with token generation
-@app.post("/register/owner", response_model=models.TokenUserResponse, status_code=status.HTTP_201_CREATED)
-async def register_owner(user: models.OwnerCreate):
+@app.post("/register/owner", response_model=TokenUserResponse, status_code=status.HTTP_201_CREATED)
+async def register_owner(user: OwnerCreate):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
@@ -190,8 +216,8 @@ async def register_owner(user: models.OwnerCreate):
         "token_type": "bearer"
     }
 
-@app.post("/register/seeker", response_model=models.TokenUserResponse, status_code=status.HTTP_201_CREATED)
-async def register_seeker(user: models.SeekerCreate):
+@app.post("/register/seeker", response_model=TokenUserResponse, status_code=status.HTTP_201_CREATED)
+async def register_seeker(user: SeekerCreate):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
@@ -230,8 +256,8 @@ async def register_seeker(user: models.SeekerCreate):
     }
 
 # Protected endpoints
-@app.get("/users", response_model=list[models.UserResponse])
-async def get_users(current_user: models.UserInDB = Depends(get_current_user)):
+@app.get("/users", response_model=list[UserResponse])
+async def get_users(current_user: UserBase = Depends(get_current_user)):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
@@ -244,7 +270,7 @@ async def get_users(current_user: models.UserInDB = Depends(get_current_user)):
     return users
 
 
-@app.get("/properties/nearby", response_model=List[models.PropertyResponse])
+@app.get("/properties/nearby", response_model=List[PropertyResponse])
 async def get_nearby_properties():
     # This endpoint remains public (no authentication required)
     conn = get_db_connection()
@@ -266,9 +292,9 @@ async def get_nearby_properties():
     return properties
 
 #Messages retrieve
-@app.get("/messages/{user_id}", response_model=List[models.MessageResponse])
+@app.get("/messages/{user_id}", response_model=List[MessageResponse])
 async def get_chat_history(
-    user_id: int, current_user: models.UserInDB = Depends(get_current_user)
+    user_id: int, current_user: UserBase = Depends(get_current_user)
 ):
     print(f"Fetching chat history for user {current_user.id} with {user_id}")
     conn = get_db_connection()
@@ -313,7 +339,7 @@ class MessageCreate(BaseModel):
 @app.post("/messages/send", status_code=201)
 async def send_message(
     message_data: MessageCreate,  
-    current_user: models.UserInDB = Depends(get_current_user)
+    current_user: UserBase = Depends(get_current_user)
 ):
     print(f"Sending message from user {current_user.id} to {message_data.receiver_id}")
     conn = get_db_connection()
@@ -340,10 +366,10 @@ async def send_message(
     finally:
         cursor.close()
         conn.close()
-        
+
 #Retrieve chats
 @app.get("/chats", response_model=List[dict])
-async def get_user_chats(current_user: models.UserInDB = Depends(get_current_user)):
+async def get_user_chats(current_user: UserBase = Depends(get_current_user)):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -493,7 +519,7 @@ class ResetPasswordRequest(BaseModel):
 @app.post("/reset-password")
 async def reset_password(
     request: ResetPasswordRequest,
-    current_user: models.UserInDB = Depends(get_current_user)
+    current_user: UserBase = Depends(get_current_user)
 ):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -526,3 +552,149 @@ async def reset_password(
     finally:
         cursor.close()
         conn.close()
+
+@app.post("/bookings/", response_model=BookingResponse)
+async def create_booking(booking: Booking):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Get property_id from dormitory_name
+        cursor.execute("SELECT id FROM properties WHERE title = %s", (booking.dormitory_name,))
+        property_result = cursor.fetchone()
+        if not property_result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Property not found"
+            )
+        property_id = property_result['id']
+
+        # Get seeker_id from email
+        cursor.execute("SELECT id FROM users WHERE email = %s", (booking.seeker_email,))
+        seeker_result = cursor.fetchone()
+        if not seeker_result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Seeker not found"
+            )
+        seeker_id = seeker_result['id']
+
+        # Calculate end_date (30 days from check_in_date)
+        end_date = booking.check_in_date + timedelta(days=30)
+
+        # Insert the booking
+        cursor.execute(
+            """
+            INSERT INTO bookings (property_id, seeker_id, start_date, end_date, total_price, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, property_id, seeker_id, start_date, end_date, total_price, status, created_at
+            """,
+            (
+                property_id,
+                seeker_id,
+                booking.check_in_date,
+                end_date,
+                booking.total_amount,
+                'completed'
+            ),
+        )
+        
+        booking_data = cursor.fetchone()
+        conn.commit()
+
+        # Send confirmation email to seeker
+        send_booking_confirmation_email(
+            booking.seeker_email,
+            booking.dormitory_name,
+            booking.check_in_date,
+            booking.total_amount
+        )
+
+        # Send notification email to owner
+        send_owner_notification_email(
+            booking.owner_email,
+            booking.dormitory_name,
+            booking.seeker_email,
+            booking.check_in_date
+        )
+
+        return booking_data
+
+    except Exception as e:
+        print(f"Error creating booking: {str(e)}")
+        conn.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create booking"
+        )
+    finally:
+        cursor.close()
+        conn.close()
+
+def send_booking_confirmation_email(seeker_email: str, dormitory_name: str, check_in_date: date, total_amount: float):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = os.getenv("SMTP_USERNAME")
+        msg['To'] = seeker_email
+        msg['Subject'] = "Booking Confirmation - RentEase"
+
+        body = f"""
+        Dear User,
+
+        Your booking has been confirmed!
+
+        Booking Details:
+        Dormitory: {dormitory_name}
+        Check-in Date: {check_in_date}
+        Total Amount: ₹{total_amount}
+
+        Thank you for choosing RentEase!
+
+        Best regards,
+        RentEase Team
+        """
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
+        server.send_message(msg)
+        server.quit()
+
+    except Exception as e:
+        print(f"Error sending confirmation email: {str(e)}")
+
+def send_owner_notification_email(owner_email: str, dormitory_name: str, seeker_email: str, check_in_date: date):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = os.getenv("SMTP_USERNAME")
+        msg['To'] = owner_email
+        msg['Subject'] = "New Booking Notification - RentEase"
+
+        body = f"""
+        Dear Owner,
+
+        You have received a new booking for your dormitory!
+
+        Booking Details:
+        Dormitory: {dormitory_name}
+        Seeker Email: {seeker_email}
+        Check-in Date: {check_in_date}
+
+        Please log in to your dashboard to view more details.
+
+        Best regards,
+        RentEase Team
+        """
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD"))
+        server.send_message(msg)
+        server.quit()
+
+    except Exception as e:
+        print(f"Error sending owner notification email: {str(e)}")

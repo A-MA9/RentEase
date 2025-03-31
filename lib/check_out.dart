@@ -4,8 +4,17 @@ import 'payment_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   final DateTime selectedDate;
+  final String dormitoryName;
+  final String ownerEmail;
+  final double totalAmount;
 
-  const CheckoutPage({Key? key, required this.selectedDate}) : super(key: key);
+  const CheckoutPage({
+    Key? key,
+    required this.selectedDate,
+    required this.dormitoryName,
+    required this.ownerEmail,
+    required this.totalAmount,
+  }) : super(key: key);
 
   @override
   _CheckoutPageState createState() => _CheckoutPageState();
@@ -263,7 +272,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       child: Column(
         children: [
           Text(
-            "₹5500",
+            "₹${widget.totalAmount}",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 6),
@@ -271,7 +280,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => PaymentPage()),
+                MaterialPageRoute(
+                  builder: (context) => PaymentPage(
+                    dormitoryName: widget.dormitoryName,
+                    ownerEmail: widget.ownerEmail,
+                    checkInDate: widget.selectedDate,
+                    totalAmount: widget.totalAmount,
+                  ),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(

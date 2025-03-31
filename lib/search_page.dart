@@ -121,7 +121,17 @@ class _SearchPageState extends State<SearchPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => RoomDetailsPage(),
+                          builder: (context) => RoomDetailsPage(
+                            dormitory: {
+                              'title': 'VIP Dormitory Jaipur Double Bed',
+                              'property_type': 'Woman',
+                              'location': 'Sindhi Camp',
+                              'owner_name': 'Virat',
+                              'owner_email': 'virat@example.com',
+                              'description': 'Wifi - AC - Attached bath - 24/7 UPS',
+                              'price_per_month': '5000',
+                            },
+                          ),
                         ),
                       );
                     },
