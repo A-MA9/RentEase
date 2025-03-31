@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'payment_page.dart';
 
 class CheckoutPage extends StatefulWidget {
+  final DateTime selectedDate;
+
+  const CheckoutPage({Key? key, required this.selectedDate}) : super(key: key);
+
   @override
   _CheckoutPageState createState() => _CheckoutPageState();
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
+  String _formatDate(DateTime date) {
+    return DateFormat('EEEE, d MMMM yyyy').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,13 +163,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
               SizedBox(height: 4),
               Text(
-                "Monday, 7 March 2025",
+                _formatDate(widget.selectedDate),
                 style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pop(context);
+            },
             child: Text(
               "Edit",
               style: TextStyle(
@@ -247,28 +259,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildCheckoutButton() {
-    return Column(
-      children: [
-        Text(
-          "₹5500",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 6),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.brown,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+    return Center(
+      child: Column(
+        children: [
+          Text(
+            "₹5500",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 6),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PaymentPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.brown,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 80),
             ),
-            padding: EdgeInsets.symmetric(vertical: 14, horizontal: 80),
+            child: Text(
+              "Check out",
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
           ),
-          child: Text(
-            "Check out",
-            style: TextStyle(fontSize: 16, color: Colors.white),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

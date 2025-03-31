@@ -98,7 +98,9 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CheckoutPage()),
+                    MaterialPageRoute(
+                      builder: (context) => CheckoutPage(selectedDate: _selectedDay),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
