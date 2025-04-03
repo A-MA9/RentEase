@@ -25,6 +25,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+
 # JWT Configuration
 SECRET_KEY = "your-secret-key-change-this-in-production"  # Use a strong secret key in production
 ALGORITHM = "HS256"
@@ -698,3 +699,30 @@ def send_owner_notification_email(owner_email: str, dormitory_name: str, seeker_
 
     except Exception as e:
         print(f"Error sending owner notification email: {str(e)}")
+
+
+#Fetch property details
+@app.post("/properties") 
+async def get_properties():
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    query = """
+    SELECT properties.id, properties.title, properties.location, properties.price_per_month, 
+           users.full_name AS owner_name, users.email AS owner_email
+    FROM properties
+    JOIN users ON properties.owner_id = users.id
+    """
+    
+    cursor.execute(query)
+    properties = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    print("Sent data")
+    
+    return properties
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

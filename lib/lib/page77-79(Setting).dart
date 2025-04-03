@@ -33,8 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           children: [
             _buildNotificationCard(),
-            SizedBox(height: 12),
-            _buildDeleteAccountCard(),
+            // Delete account section removed
           ],
         ),
       ),
@@ -111,59 +110,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  Widget _buildDeleteAccountCard() {
-    return GestureDetector(
-      onTap: () {
-        _showDeleteConfirmationDialog();
-      },
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 2,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.delete_outline, color: Colors.red, size: 24),
-              SizedBox(width: 10),
-              Text(
-                "Delete Account",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text("Are you sure you want to delete your account from RentEase?"),
-          content: Text("Once you delete this account, all the data will be lost and cannot be recovered!"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text("Back", style: TextStyle(color: Colors.black)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text("Delete", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
-

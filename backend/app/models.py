@@ -67,7 +67,7 @@ class PropertyResponse(BaseModel):
     id: int
     owner_id: int
     title: str
-    description: Optional[str]
+    # description: Optional[str]
     property_type: str
     size_sqft: Optional[float]
     location: str
@@ -75,6 +75,16 @@ class PropertyResponse(BaseModel):
     min_stay_months: int
     is_available: bool
     created_at: str
+    tv:bool
+    fan:bool
+    ac:bool
+    chair:bool
+    ventilation:bool
+    ups:bool
+    sofa:bool
+    lamp:bool
+    bath:int   
+
 
     class Config:
         orm_mode = True

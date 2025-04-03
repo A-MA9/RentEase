@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'owner_chat.dart'; // Import the chat screen
+import 'chat_list.dart'; // Import the chat screen
 
 class HomePageOwner extends StatelessWidget {
   @override

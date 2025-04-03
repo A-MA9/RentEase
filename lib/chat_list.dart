@@ -51,7 +51,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
       appBar: AppBar(title: Text("Chats")),
       body:
           chats.isEmpty
-              ? Center(child: CircularProgressIndicator())
+              ? Center(
+                child: Text(
+                  "No messages yet",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                ),
+              )
               : ListView.builder(
                 itemCount: chats.length,
                 itemBuilder: (context, index) {

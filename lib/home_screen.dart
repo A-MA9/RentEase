@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'search_page.dart'; // Import the search page
 import 'home_page.dart'; // Import the home page
-import 'lib/page66(profile).dart'; // Import the profile page
+import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

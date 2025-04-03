@@ -43,3 +43,19 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment variables and secrets
+.env
+.env.*
+*.env
+!.env.example
+
+# AWS credential files
+aws-credentials.json
+aws.json
+aws-config.json
+
+# Backup files that may contain sensitive data
+*.bak
+*.backup
+*copy*
