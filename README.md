@@ -36,16 +36,6 @@ RentEase is a mobile application designed to bridge the gap between property own
 - Save favorite listings
 - View booking history
 
-## Technical Stack
-
-- **Frontend**: Flutter
-- **Backend**: Firebase
-- **Authentication**: Firebase Auth
-- **Database**: Cloud Firestore
-- **Storage**: Firebase Storage
-- **Payment Gateway**: Simulated payment system
-- **Maps Integration**: Google Maps API
-
 ## Getting Started
 
 ### Prerequisites
@@ -60,7 +50,7 @@ RentEase is a mobile application designed to bridge the gap between property own
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/rentease.git
+https://github.com/A-MA9/RentEase.git
 ```
 
 2. Install dependencies
