@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'lib/page66(profile).dart'; // Import the profile page
+import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 
 class HomePage extends StatelessWidget {
