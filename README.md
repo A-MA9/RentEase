@@ -74,8 +74,8 @@ Project Link: [https://github.com/yourusername/rentease](https://github.com/your
 
 ## Screenshots
 
-[Add your app screenshots here]
+[Add your app screenshots here](assets/Screenshots/Screenshot_1743313656.png)
 
 ---
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by RentEase
