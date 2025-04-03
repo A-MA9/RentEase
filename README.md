@@ -74,7 +74,7 @@ Project Link: [https://github.com/yourusername/rentease](https://github.com/your
 
 ## Screenshots
 
-![RentEase Logo](assets/Screenshots/Screenshot_1743313656.png)
+![RentEase Logo](Screenshots/Screenshot_1743313656.png)
 
 ---
 
