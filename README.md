@@ -1,6 +1,6 @@
 # RentEase - Student Housing Made Easy
 
-![RentEase Logo](assets/images/logo.png)
+![RentEase Logo](assets/image.png)
 
 ## Overview
 
