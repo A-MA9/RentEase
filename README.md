@@ -66,16 +66,6 @@ flutter pub get
 flutter run
 ```
 
-## Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
-
-Project Link: [https://github.com/yourusername/rentease](https://github.com/yourusername/rentease)
-
-## Screenshots
-
-![RentEase Logo](Screenshots/Screenshot_1743313656.png)
-
 ---
 
 Made with ❤️ by RentEase
