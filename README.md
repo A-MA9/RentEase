@@ -60,55 +60,11 @@ cd rentease
 flutter pub get
 ```
 
-3. Configure Firebase
-
-- Create a new Firebase project
-- Add Android and iOS apps
-- Download and add configuration files
-- Enable Authentication and Firestore
-
-4. Set up environment variables
-
-```bash
-cp .env.example .env
-# Add your configuration values
-```
-
-5. Run the app
+3. Run the app
 
 ```bash
 flutter run
 ```
-
-## Project Structure
-
-```
-lib/
-├── models/          # Data models
-├── screens/         # UI screens
-├── services/        # Business logic
-├── widgets/         # Reusable widgets
-├── utils/          # Utility functions
-└── main.dart       # Entry point
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Flutter team for the amazing framework
-- Firebase for backend services
-- All contributors who have helped shape this project
 
 ## Contact
 
