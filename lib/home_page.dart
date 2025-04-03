@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
 import 'lib/page66(profile).dart'; // Import the profile page
+import 'chat_list.dart'; // Import the chat page
 
 class HomePage extends StatelessWidget {
   @override
@@ -21,6 +22,14 @@ class HomePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          }
+          //Chat
+          else if (index == 3) {
+            // Search icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChatListScreen()),
             );
           }
           // Handle other navigation as needed
