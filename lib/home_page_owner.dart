@@ -1,12 +1,48 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'chat_list.dart'; // Import the chat screen
+import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
+import 'chat_list.dart'; // Import the chat page
+import 'owner_houses.dart'; // Import the owner's buildings page
 
 class HomePageOwner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: BottomNavBar(
+        selectedIndex: 2, // Home is selected
+        onItemTapped: (index) {
+          if (index == 4) {
+            // Person icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfilePage()),
+            );
+          } else if (index == 0) {
+            // Search icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          }
+          //Chat
+          else if (index == 3) {
+            // Search icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChatListScreen()),
+            );
+          }
+          // Owner's buildings
+          else if (index == 1) {
+            // Search icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => OwnerHouses()),
+            );
+          }
+        },
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,7 +78,7 @@ class HomePageOwner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'VibeInDormitory Owner',
+                    'Dormitory Owner',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
@@ -89,28 +125,6 @@ class HomePageOwner extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // **Apartment Selection**
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.apartment, size: 30, color: Colors.brown),
-                  title: Text(
-                    'Apartment',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {},
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
             // **Full Ad Image (Not Cut)**
             Expanded(
               child: Padding(
@@ -127,38 +141,65 @@ class HomePageOwner extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-
-            // **Bottom Navigation Bar**
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Icon(Icons.search, size: 30, color: Colors.brown),
-                  Icon(Icons.favorite_border, size: 30, color: Colors.brown),
-                  Icon(Icons.home, size: 30, color: Colors.brown),
-                  GestureDetector(
-                    onTap: () {
-                      // **Navigate to ChatOwner screen**
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatListScreen(),
-                        ),
-                      );
-                    },
-                    child: Icon(
-                      Icons.chat_bubble_outline,
-                      size: 30,
-                      color: Colors.brown,
-                    ),
-                  ),
-                  Icon(Icons.person_outline, size: 30, color: Colors.brown),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Reusing the BottomNavBar component from ProfilePage for consistency
+class BottomNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final Function(int) onItemTapped;
+
+  const BottomNavBar({required this.selectedIndex, required this.onItemTapped});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        child: BottomNavigationBar(
+          items: [
+            BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
+            BottomNavigationBarItem(
+              icon: Image.asset(
+                'assets/building_brown.png',
+                width: 24,
+                height: 24,
+              ),
+              label: "",
+            ),
+
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
+            BottomNavigationBarItem(icon: Icon(Icons.message), label: ""),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
+          ],
+          currentIndex: selectedIndex,
+          onTap: onItemTapped,
+          selectedItemColor: Colors.brown,
+          unselectedItemColor: Colors.black54,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          backgroundColor: Colors.white,
         ),
       ),
     );

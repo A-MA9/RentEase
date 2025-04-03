@@ -70,7 +70,7 @@ class HomePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'VibeInDormitory',
+                    'Dormitory Finder',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
@@ -111,28 +111,6 @@ class HomePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // **Apartment Selection**
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.apartment, size: 30, color: Colors.brown),
-                  title: Text(
-                    'Apartment',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 18),
-                  onTap: () {},
                 ),
               ),
             ),
