@@ -723,6 +723,15 @@ async def get_properties():
     
     return properties
 
+@app.get("/properties")
+def get_properties(owner_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM properties WHERE owner_id = %s", (owner_id,))
+    houses = cursor.fetchall()
+    conn.close()
+    return houses
+
 
 if __name__ == '__main__':
     app.run(debug=True)
