@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'property_type.dart';
 import 'services/otp_service.dart';
+import 'services/flutter_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class Verification2Screen extends StatefulWidget {
   final int userType;
@@ -61,6 +65,14 @@ class _Verification2ScreenState extends State<Verification2Screen> {
       );
 
       if (isValid) {
+        // Update user verification status in the backend
+        await _updateVerificationStatus();
+        
+        // Update verification status in secure storage
+        await SecureStorage.storage.write(key: 'verified', value: 'true');
+        
+        print("🔹 User verification status updated in secure storage");
+        
         // Navigate based on user type
         if (widget.userType == 1) {
           Navigator.pushReplacement(
@@ -84,6 +96,49 @@ class _Verification2ScreenState extends State<Verification2Screen> {
         _errorMessage = 'An error occurred: ${e.toString()}';
         _isVerifying = false;
       });
+    }
+  }
+
+  Future<void> _updateVerificationStatus() async {
+    try {
+      final userType = widget.userType == 1 ? 'owner' : 'seeker';
+      
+      // API URL based on platform
+      final apiUrl = kIsWeb
+          ? 'http://localhost:8000/verify/$userType' // For web
+          : 'http://10.0.2.2:8000/verify/$userType'; // For Android emulator
+      
+      // Get token if available
+      final token = await SecureStorage.storage.read(key: 'access_token');
+      
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'email': widget.email,
+          'verified': true,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // If we get a new token after verification, store it
+        if (data['access_token'] != null) {
+          await SecureStorage.storage.write(
+            key: 'access_token', 
+            value: data['access_token']
+          );
+          print("🔹 Updated token after verification");
+        }
+      } else {
+        print("⚠️ Failed to update verification status: ${response.body}");
+      }
+    } catch (e) {
+      print("⚠️ Error updating verification status: $e");
     }
   }
 

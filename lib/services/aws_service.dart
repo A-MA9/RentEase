@@ -15,24 +15,18 @@ class AwsService {
   // AWS credentials from .env file
   static String get _accessKey => dotenv.env['AWS_ACCESS_KEY'] ?? '';
   static String get _secretKey => dotenv.env['AWS_SECRET_KEY'] ?? '';
-  static String get _region => dotenv.env['AWS_REGION'] ?? 'ap-south-1';
-  static String get _bucketName => dotenv.env['AWS_BUCKET_NAME'] ?? 'rentease-room-images';
+  static String get _region => dotenv.env['AWS_REGION'] ?? '';
+  static String get _bucketName => dotenv.env['AWS_BUCKET_NAME'] ?? '';
 
   static String get _baseUrl => 'https://$_bucketName.s3.$_region.amazonaws.com';
 
   // Upload image and return the URL
   static Future<String?> uploadImage(dynamic file) async {
     try {
-      // Validate credentials
-      if (_accessKey.isEmpty || _secretKey.isEmpty) {
-        print('AWS credentials not found in .env file');
-        return null;
-      }
-      
       // Log credentials for debugging (be careful with this in production)
       print('AWS Upload - Using credentials:');
-      print('Access Key: ${_accessKey.substring(0, 3)}...');
-      print('Secret Key: ${_secretKey.substring(0, 3)}...');
+      print('Access Key: ${_accessKey.substring(0, 5)}...');
+      print('Secret Key: ${_secretKey.substring(0, 5)}...');
       print('Region: $_region');
       print('Bucket: $_bucketName');
       

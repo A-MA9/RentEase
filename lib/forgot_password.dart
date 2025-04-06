@@ -40,8 +40,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final apiUrl = kIsWeb
-          ? 'http://localhost:8000/forgot-password'
-          : 'http://10.0.2.2:8000/forgot-password';
+          ? 'http://localhost:8000/request-password-reset'
+          : 'http://10.0.2.2:8000/request-password-reset';
 
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -59,6 +59,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _otpSent = true;
           _isLoading = false;
         });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('OTP has been sent to your email'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
         final errorData = json.decode(response.body);
         setState(() {
@@ -75,66 +82,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  Future<void> _verifyOtp() async {
-    if (_otpController.text.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please enter the OTP';
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/verify-reset-otp'
-          : 'http://10.0.2.2:8000/verify-reset-otp';
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': _emailController.text.trim(),
-          'otp': _otpController.text.trim(),
-        }),
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        // Store reset token securely
-        await OtpService.storage.write(
-          key: 'reset_token',
-          value: data['reset_token'],
-        );
-        
-        setState(() {
-          _otpVerified = true;
-          _isLoading = false;
-        });
-      } else {
-        final errorData = json.decode(response.body);
-        setState(() {
-          _errorMessage = errorData['detail'] ?? 'Invalid OTP';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error verifying OTP: $e');
-      setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _resetPassword() async {
-    if (_newPasswordController.text.isEmpty ||
+    if (_otpController.text.isEmpty || 
+        _newPasswordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
       setState(() {
         _errorMessage = 'Please fill in all fields';
@@ -155,22 +105,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final resetToken = await OtpService.storage.read(key: 'reset_token');
-      if (resetToken == null) {
-        throw Exception('Reset token not found');
-      }
-
       final apiUrl = kIsWeb
           ? 'http://localhost:8000/reset-password'
           : 'http://10.0.2.2:8000/reset-password';
 
       final response = await http.post(
         Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $resetToken',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'email': _emailController.text.trim(),
+          'otp': _otpController.text.trim(),
           'new_password': _newPasswordController.text.trim(),
         }),
       );
@@ -178,11 +122,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
+      setState(() {
+        _isLoading = false;
+      });
+
       if (response.statusCode == 200) {
-        // Clear reset token
-        await OtpService.storage.delete(key: 'reset_token');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password has been reset successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
         
-        // Navigate back to login
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -191,7 +142,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         final errorData = json.decode(response.body);
         setState(() {
           _errorMessage = errorData['detail'] ?? 'Failed to reset password';
-          _isLoading = false;
         });
       }
     } catch (e) {
@@ -218,7 +168,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!_otpSent && !_otpVerified) ...[
+            if (!_otpSent) ...[
               const Text(
                 'Enter your email address to receive a password reset code',
                 style: TextStyle(fontSize: 16),
@@ -244,7 +194,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Send OTP'),
               ),
-            ] else if (_otpSent && !_otpVerified) ...[
+            ] else ...[
               const Text(
                 'Enter the 6-digit code sent to your email',
                 style: TextStyle(fontSize: 16),
@@ -254,38 +204,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               TextField(
                 controller: _otpController,
                 decoration: const InputDecoration(
-                  labelText: 'OTP',
+                  labelText: 'OTP Code',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 maxLength: 6,
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _verifyOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Verify OTP'),
-              ),
-            ] else if (_otpVerified) ...[
               const Text(
                 'Enter your new password',
                 style: TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               TextField(
                 controller: _newPasswordController,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'New Password',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() {
@@ -294,17 +236,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     },
                   ),
                 ),
-                obscureText: _obscurePassword,
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
                 decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
+                  labelText: 'Confirm Password',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() {
@@ -313,7 +257,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     },
                   ),
                 ),
-                obscureText: _obscureConfirmPassword,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -333,13 +276,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 _errorMessage!,
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
-              ),
-            ],
-            if (_otpSent && !_otpVerified) ...[
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: _isLoading ? null : _sendOtp,
-                child: const Text('Resend OTP'),
               ),
             ],
           ],

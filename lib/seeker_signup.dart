@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/otp_service.dart';
+import 'services/flutter_storage.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 class SeekerSignUpScreen extends StatefulWidget {
   const SeekerSignUpScreen({super.key});
@@ -79,6 +81,41 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
       });
 
       if (response.statusCode == 201) {
+        // Store user data in secure storage
+        final userData = json.decode(response.body);
+        
+        // Store the email
+        await SecureStorage.storage.write(key: 'email', value: _emailController.text);
+        
+        // Store user type
+        await SecureStorage.storage.write(key: 'user_type', value: 'seeker');
+        
+        // If there's a user_id in the response, store it
+        if (userData['id'] != null) {
+          await SecureStorage.storage.write(key: 'user_id', value: userData['id'].toString());
+        }
+        
+        // If there's a token in the response, store it
+        if (userData['access_token'] != null) {
+          final token = userData['access_token'];
+          await SecureStorage.storage.write(key: 'access_token', value: token);
+          
+          // Try to decode the token to extract additional information
+          try {
+            final jwt = JWT.decode(token);
+            if (jwt.payload['user_id'] != null) {
+              await SecureStorage.storage.write(
+                key: 'user_id', 
+                value: jwt.payload['user_id']
+              );
+            }
+          } catch (e) {
+            print("Failed to decode JWT: $e");
+          }
+        }
+        
+        print("🔹 Stored user data in secure storage");
+        
         // Registration successful, navigate to verification
         Navigator.push(
           context,

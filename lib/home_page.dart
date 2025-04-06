@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
 import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
+import 'profile_router.dart'; // Import the profile router
+import 'lib/favorites_screen.dart'; // Import the favorites screen
 
 class HomePage extends StatelessWidget {
   @override
@@ -15,7 +17,7 @@ class HomePage extends StatelessWidget {
             // Person icon
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ProfilePage()),
+              MaterialPageRoute(builder: (context) => ProfileRouter()),
             );
           } else if (index == 0) {
             // Search icon
@@ -23,10 +25,14 @@ class HomePage extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => HomeScreen()),
             );
-          }
-          //Chat
-          else if (index == 3) {
-            // Search icon
+          } else if (index == 1) {
+            // Favorites icon
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => FavoritesScreen()),
+            );
+          } else if (index == 3) {
+            // Chat icon
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => ChatListScreen()),

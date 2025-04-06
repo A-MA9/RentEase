@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'search_page.dart'; // Import the search page
 import 'home_page.dart'; // Import the home page
 import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
+import 'profile_router.dart'; // Import the profile router
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -206,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Person icon index (profile)
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ProfilePage()),
+        MaterialPageRoute(builder: (context) => ProfileRouter()),
       );
     } else {
       setState(() {

@@ -3,6 +3,7 @@ import 'home_screen.dart'; // Import the home screen
 import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'owner_houses.dart'; // Import the owner's buildings page
+import 'profile_router.dart'; // Import the profile router
 
 class HomePageOwner extends StatelessWidget {
   @override
@@ -16,7 +17,7 @@ class HomePageOwner extends StatelessWidget {
             // Person icon
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ProfilePage()),
+              MaterialPageRoute(builder: (context) => ProfileRouter()),
             );
           } else if (index == 0) {
             // Search icon
@@ -24,18 +25,14 @@ class HomePageOwner extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => HomeScreen()),
             );
-          }
-          //Chat
-          else if (index == 3) {
-            // Search icon
+          } else if (index == 3) {
+            // Chat icon
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => ChatListScreen()),
             );
-          }
-          // Owner's buildings
-          else if (index == 1) {
-            // Search icon
+          } else if (index == 1) {
+            // Owner's dormitories
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => OwnerHouses()),
@@ -148,7 +145,7 @@ class HomePageOwner extends StatelessWidget {
   }
 }
 
-// Reusing the BottomNavBar component from ProfilePage for consistency
+// BottomNavBar with building icon for owners
 class BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
@@ -186,9 +183,8 @@ class BottomNavBar extends StatelessWidget {
                 width: 24,
                 height: 24,
               ),
-              label: "",
+              label: "My Properties",
             ),
-
             BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
             BottomNavigationBarItem(icon: Icon(Icons.message), label: ""),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),

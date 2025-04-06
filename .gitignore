@@ -59,3 +59,7 @@ aws-config.json
 *.bak
 *.backup
 *copy*
+
+# Ensure all .env files are ignored
+.env
+backend/.env

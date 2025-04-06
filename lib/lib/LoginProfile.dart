@@ -1,10 +1,12 @@
-
 import 'package:flutter/material.dart';
 import 'page67(profileEdit).dart'; // Import page67.dart
 import 'page77-79(Set&DelAccount).dart'; // Import page77-79.dart
 import 'page73(transactionHistory).dart'; // Import page66.dart which contains TransactionHistoryScreen
 import 'page68(pastDormitory).dart'; // Import the new Past Dormitory screen
 import '../home_screen.dart'; // Import the home screen
+import 'favorites_screen.dart'; // Import the favorites screen which we'll create
+import '../services/flutter_storage.dart';
+import '../login.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -22,6 +24,12 @@ class ProfilePage extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          } else if (index == 1) { // Favorites
+            // Navigate to favorites page
+            Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (context) => FavoritesScreen()),
             );
           }
           // Handle other navigation options as needed
@@ -46,10 +54,19 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 10),
             ProfileMenu(
               items: [
+                ProfileMenuItem(Icons.favorite, "My favorites"),
                 ProfileMenuItem(Icons.home, "Rental application history"),
                 ProfileMenuItem(Icons.apartment, "Past dorms history"),
                 ProfileMenuItem(Icons.history, "Transaction history"),
               ],
+              onFavoritesTap: (context) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FavoritesScreen(),
+                  ),
+                );
+              },
               onTransactionHistoryTap: (context) {
                 Navigator.push(
                   context,
@@ -176,12 +193,14 @@ class ProfileMenu extends StatelessWidget {
   final Function(BuildContext)? onSettingsTap;
   final Function(BuildContext)? onTransactionHistoryTap;
   final Function(BuildContext)? onPastDormsHistoryTap;
+  final Function(BuildContext)? onFavoritesTap;
 
   ProfileMenu({
     required this.items, 
     this.onSettingsTap, 
     this.onTransactionHistoryTap,
     this.onPastDormsHistoryTap,
+    this.onFavoritesTap,
   });
 
   @override
@@ -205,7 +224,9 @@ class ProfileMenu extends StatelessWidget {
                   ? () => onTransactionHistoryTap!(context)
                   : item.title == "Past dorms history" && onPastDormsHistoryTap != null
                       ? () => onPastDormsHistoryTap!(context)
-                      : null
+                      : item.title == "My favorites" && onFavoritesTap != null
+                          ? () => onFavoritesTap!(context)
+                          : null
         )).toList(),
       ),
     );
@@ -251,112 +272,37 @@ class LogoutButton extends StatelessWidget {
       ),
       child: ListTile(
         leading: Icon(Icons.logout, color: Colors.red),
-        title: Text("Log out account", style: TextStyle(color: Colors.red)),
+        title: Text("Logout", style: TextStyle(color: Colors.red)),
         onTap: () {
-          _showLogoutDialog(context); // Added onTap handler to show logout dialog
+          // Handle logout
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text("Logout"),
+              content: Text("Are you sure you want to logout?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Clear secure storage
+                    await SecureStorage.storage.deleteAll();
+                    
+                    // Navigate to login screen
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => LoginScreen()),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                  child: Text("Logout"),
+                ),
+              ],
+            ),
+          );
         },
       ),
-    );
-  }
-
-  // Added new method to show the logout confirmation dialog
-  void _showLogoutDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.3,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      "Logout account!",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Text(
-                      "Are you sure you want to Logout?",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Close dialog when Back is pressed
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF8D6E63),
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Text(
-                          "Back",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 20),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          // Implement actual logout logic here
-                          Navigator.pop(context); // Close dialog when Log Out is pressed
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.black),
-                          padding: EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Text(
-                          "Log Out",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

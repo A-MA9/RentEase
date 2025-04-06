@@ -71,16 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final jwt = JWT.decode(token);
         String? userType = jwt.payload['user_type'];
-        int? userId = jwt.payload['user_id'];
+        String? userId = jwt.payload['user_id'];
 
         if (userType != null && userId != null) {
           await SecureStorage.storage.write(key: 'user_type', value: userType);
           await SecureStorage.storage.write(
             key: 'user_id',
-            value: userId.toString(),
+            value: userId,
           );
-          print("🔹 Decoded User Type: $userType");
-          print("🔹 Decoded User ID: $userId");
+          print("User Type: $userType");
+          print("User ID: $userId");
 
           // ✅ Navigate based on user type
           if (userType == 'owner') {

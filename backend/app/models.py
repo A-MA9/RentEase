@@ -3,27 +3,33 @@ from typing import Optional, List
 from datetime import datetime, date
 
 class UserBase(BaseModel):
-    id: int
+    id: Optional[str] = None
     full_name: str
     phone_number: str
     email: EmailStr
     password: str
 
-class OwnerCreate(UserBase):
-    pass
+class OwnerCreate(BaseModel):
+    full_name: str
+    phone_number: str
+    email: EmailStr
+    password: str
 
-class SeekerCreate(UserBase):
-    pass
+class SeekerCreate(BaseModel):
+    full_name: str
+    phone_number: str
+    email: EmailStr
+    password: str
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     full_name: str
     phone_number: str
     email: EmailStr
     user_type: str  # "owner" or "seeker"
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Add these Token models
 class Token(BaseModel):
@@ -31,7 +37,7 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    user_id: Optional[int] = None
+    user_id: Optional[str] = None
     email: Optional[str] = None
     user_type: Optional[str] = None
 
@@ -42,12 +48,12 @@ class TokenUserResponse(BaseModel):
 
 class UserInDB(UserResponse):
     password: str
-    created_at: Optional[datetime] = None
+    created_at: Optional[str] = None
 
 # Chat
 class MessageBase(BaseModel):
-    sender_id: int
-    receiver_id: int
+    sender_id: str
+    receiver_id: str
     message: str
     message_type: str = 'text'
 
@@ -55,40 +61,43 @@ class MessageCreate(MessageBase):
     pass
 
 class MessageResponse(MessageBase):
-    id: int
+    id: str
     timestamp: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         }
 
 class PropertyResponse(BaseModel):
-    id: int
-    owner_id: int
+    id: str
+    owner_id: str
     title: str
-    # description: Optional[str]
+    description: Optional[str]
     property_type: str
-    size_sqft: Optional[float]
+    size_sqft: Optional[float] = None
     location: str
     price_per_month: float
     min_stay_months: int
     is_available: bool
     created_at: str
-    tv:bool
-    fan:bool
-    ac:bool
-    chair:bool
-    ventilation:bool
-    ups:bool
-    sofa:bool
-    lamp:bool
-    bath:int   
-
+    image_urls: List[str] = []
+    panoramic_urls: Optional[List[str]] = []
+    gender: Optional[str] = "Both"
+    rooms_available: Optional[int] = 1
+    tv: bool = False
+    fan: bool = False
+    ac: bool = False
+    chair: bool = False
+    ventilation: bool = False
+    ups: bool = False
+    sofa: bool = False
+    lamp: bool = False
+    bath: int = 1
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class Booking(BaseModel):
     dormitory_name: str
@@ -98,9 +107,9 @@ class Booking(BaseModel):
     total_amount: float
 
 class BookingResponse(BaseModel):
-    id: int
-    property_id: int
-    seeker_id: int
+    id: str
+    property_id: str
+    seeker_id: str
     start_date: date
     end_date: date
     total_price: float
