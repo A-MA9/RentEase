@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from requests import Session
 from .models import (
     UserBase, OwnerCreate, SeekerCreate, UserResponse, Token, 
     TokenData, TokenUserResponse, UserInDB, MessageBase, 
@@ -28,6 +29,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import boto3
 from decimal import Decimal
+from boto3.dynamodb.conditions import Attr
 
 
 # JWT Configuration
@@ -956,6 +958,87 @@ def db_get_user_by_id(user_id: str):
     if users:
         return users[0]
     return None
+#Search for properties based on location
+@app.get("/properties/search", response_model=List[PropertyResponse])
+async def search_properties_by_location(location: str):
+    """
+    Searches properties based on a location string.
+    Performs a case-insensitive 'contains' search on the 'location' attribute.
+    """
+    if not location:
+        # Return empty list or maybe nearby properties if query is empty?
+        # Let's return empty for now.
+        return [] 
+
+    try:
+        properties_table = get_properties_table()
+        
+        # Use scan with a FilterExpression. 
+        # Note: Scan can be less efficient on large tables. 
+        # Consider a GSI on 'location' if performance becomes an issue.
+        # We'll do a case-insensitive search by fetching all and filtering in Python,
+        # as DynamoDB's contains is case-sensitive.
+        # A more performant approach would involve storing a lowercase version of the location.
+        
+        response = properties_table.scan() # Fetch all items
+        all_properties = response.get('Items', [])
+        
+        # Handle pagination if necessary (scan might not return all items at once)
+        while 'LastEvaluatedKey' in response:
+            response = properties_table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            all_properties.extend(response.get('Items', []))
+
+        # Filter in Python for case-insensitive 'contains'
+        search_term_lower = location.lower()
+        filtered_properties = [
+            prop for prop in all_properties
+            if 'location' in prop and search_term_lower in prop['location'].lower()
+        ]
+
+        # Optional: Sort results if needed, e.g., by creation date
+        sorted_properties = sorted(
+            filtered_properties,
+            key=lambda x: x.get('created_at', ''),
+            reverse=True
+        )
+
+        print(f"Search for location '{location}' found {len(sorted_properties)} properties.")
+        return sorted_properties
+
+    except Exception as e:
+        print(f"Error searching properties for location '{location}': {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search properties: {str(e)}"
+        )
+
+@app.get("/get_property/{property_id}", response_model=PropertyResponse)
+async def get_property_by_id(property_id: str):
+    """
+    Fetch a property by its ID from the DynamoDB table.
+    """
+    try:
+        properties_table = get_properties_table()
+
+        # Fetch the item with the matching property_id (partition key)
+        response = properties_table.get_item(Key={'id': property_id})
+        property_item = response.get('Item')
+
+        if not property_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Property with ID {property_id} not found."
+            )
+
+        print(f"Property fetched successfully for ID: {property_id}")
+        return property_item
+
+    except Exception as e:
+        print(f"Error fetching property by ID '{property_id}': {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get property: {str(e)}"
+        )
 
 if __name__ == '__main__':
     app.run(debug=True)

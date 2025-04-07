@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app_2/home_screen_owner.dart';
 import 'home_screen.dart'; // Import the home screen
 import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'owner_houses.dart'; // Import the owner's buildings page
 import 'profile_router.dart'; // Import the profile router
+import 'home_screen_owner.dart';
 
 class HomePageOwner extends StatelessWidget {
   @override
@@ -23,7 +25,7 @@ class HomePageOwner extends StatelessWidget {
             // Search icon
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
+              MaterialPageRoute(builder: (context) => HomeScreenOwner()),
             );
           } else if (index == 3) {
             // Chat icon
@@ -97,7 +99,7 @@ class HomePageOwner extends StatelessWidget {
                   // **Navigate to home_screen.dart**
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    MaterialPageRoute(builder: (context) => HomeScreenOwner()),
                   );
                 },
                 child: Container(

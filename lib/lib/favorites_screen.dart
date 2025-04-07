@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_app_2/home_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/flutter_storage.dart';
@@ -30,7 +31,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     try {
       // Get token from secure storage
       final token = await SecureStorage.storage.read(key: 'access_token');
-      
+
       if (token == null) {
         setState(() {
           _error = 'You need to log in to view favorites';
@@ -40,9 +41,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       }
 
       // API URL based on platform
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/favorites' // For web
-          : 'http://10.0.2.2:8000/favorites'; // For Android emulator
+      final apiUrl =
+          kIsWeb
+              ? 'http://localhost:8000/favorites' // For web
+              : 'http://10.0.2.2:8000/favorites'; // For Android emulator
 
       final response = await http.get(
         Uri.parse(apiUrl),
@@ -136,7 +138,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       itemCount: _favorites.length,
       itemBuilder: (context, index) {
         final property = _favorites[index];
-        
+
         // For now, let's display some mock data since we don't have actual favorite properties
         return Card(
           margin: EdgeInsets.only(bottom: 16),
@@ -148,11 +150,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => RoomDetailsPage(
-                    dormitory: property,
-                  ),
-                ),
+                MaterialPageRoute(builder: (context) => HomePage()),
               );
             },
             child: Column(
@@ -160,23 +158,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  child: property['image_url'] != null
-                      ? Image.network(
-                          property['image_url'],
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                  child:
+                      property['image_url'] != null
+                          ? Image.network(
+                            property['image_url'],
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  height: 150,
+                                  color: Colors.grey[300],
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 50,
+                                  ),
+                                ),
+                          )
+                          : Container(
                             height: 150,
                             color: Colors.grey[300],
-                            child: Icon(Icons.image_not_supported, size: 50),
+                            child: Center(child: Icon(Icons.home, size: 50)),
                           ),
-                        )
-                      : Container(
-                          height: 150,
-                          color: Colors.grey[300],
-                          child: Center(child: Icon(Icons.home, size: 50)),
-                        ),
                 ),
                 Padding(
                   padding: EdgeInsets.all(16),
@@ -232,4 +235,4 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       },
     );
   }
-} 
+}

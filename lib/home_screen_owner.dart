@@ -3,26 +3,27 @@
 // import 'package:http/http.dart' as http;
 // import 'dart:convert';
 // import 'package:flutter/foundation.dart' show kIsWeb;
-// import 'search_page.dart'; // Import the search page
-// import 'home_page.dart'; // Import the home page
-// import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
-// import 'profile_router.dart'; // Import the profile router
+// import 'search_page.dart';
+// import 'home_page_owner.dart';
+// import 'lib/page66(NoLoginProfile).dart';
+// import 'profile_router.dart';
+// import 'chat_list.dart';
+// import 'owner_houses.dart';
 
-// class HomeScreen extends StatefulWidget {
-//   const HomeScreen({super.key});
+// class HomeScreenOwner extends StatefulWidget {
+//   const HomeScreenOwner({super.key});
 
 //   @override
-//   _HomeScreenState createState() => _HomeScreenState();
+//   _HomeScreenOwnerState createState() => _HomeScreenOwnerState();
 // }
 
-// class _HomeScreenState extends State<HomeScreen> {
+// class _HomeScreenOwnerState extends State<HomeScreenOwner> {
 //   bool _locationPermissionGranted = false;
 //   List<dynamic> _nearbyRentals = [];
 //   bool _isLoading = false;
 //   String? _error;
-//   int _selectedIndex = 0; // Add this to track selected bottom nav item
+//   int _selectedIndex = 2; // Default to home
 
-//   // Get the base URL based on platform
 //   String get _baseUrl {
 //     if (kIsWeb) {
 //       return 'http://127.0.0.1:8000';
@@ -59,9 +60,7 @@
 //   }
 
 //   void _loadNearbyRentals() async {
-//     if (!_locationPermissionGranted) {
-//       return;
-//     }
+//     if (!_locationPermissionGranted) return;
 
 //     setState(() {
 //       _isLoading = true;
@@ -69,8 +68,6 @@
 //     });
 
 //     try {
-//       print('Fetching properties from: ${_baseUrl}/properties/nearby');
-
 //       final response = await http
 //           .get(
 //             Uri.parse('${_baseUrl}/properties/nearby'),
@@ -81,12 +78,8 @@
 //           )
 //           .timeout(const Duration(seconds: 10));
 
-//       print('Response status: ${response.statusCode}');
-//       print('Response body: ${response.body}');
-
 //       if (response.statusCode == 200) {
 //         final decodedData = json.decode(response.body);
-//         print('Decoded data: $decodedData');
 //         setState(() {
 //           _nearbyRentals = decodedData;
 //           _isLoading = false;
@@ -97,9 +90,7 @@
 //           _isLoading = false;
 //         });
 //       }
-//     } catch (e, stackTrace) {
-//       print('Error loading properties: $e');
-//       print('Stack trace: $stackTrace');
+//     } catch (e) {
 //       setState(() {
 //         _error = 'Error loading properties. Please try again.';
 //         _isLoading = false;
@@ -201,18 +192,31 @@
 //     );
 //   }
 
-//   // Handle bottom navigation bar tap PROFILE PAGE
 //   void _onItemTapped(int index) {
+//     setState(() {
+//       _selectedIndex = index;
+//     });
+
 //     if (index == 4) {
-//       // Person icon index (profile)
 //       Navigator.push(
 //         context,
 //         MaterialPageRoute(builder: (context) => ProfileRouter()),
 //       );
-//     } else {
-//       setState(() {
-//         _selectedIndex = index;
-//       });
+//     } else if (index == 0) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(builder: (context) => HomeScreenOwner()),
+//       );
+//     } else if (index == 1) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(builder: (context) => OwnerHouses()),
+//       );
+//     } else if (index == 3) {
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(builder: (context) => ChatListScreen()),
+//       );
 //     }
 //   }
 
@@ -227,7 +231,7 @@
 //           onPressed: () {
 //             Navigator.pushReplacement(
 //               context,
-//               MaterialPageRoute(builder: (context) => HomePage()),
+//               MaterialPageRoute(builder: (context) => HomePageOwner()),
 //             );
 //           },
 //         ),
@@ -301,25 +305,70 @@
 //           ],
 //         ),
 //       ),
-//       bottomNavigationBar: BottomNavigationBar(
-//         selectedItemColor: Colors.brown,
-//         unselectedItemColor: Colors.grey,
-//         currentIndex: _selectedIndex,
-//         onTap: _onItemTapped,
-//         items: const [
-//           BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
-//           BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: ''),
-//           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-//           BottomNavigationBarItem(
-//             icon: Icon(Icons.chat_bubble_outline),
-//             label: '',
-//           ),
-//           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-//         ],
+//       bottomNavigationBar: BottomNavBar(
+//         selectedIndex: _selectedIndex,
+//         onItemTapped: _onItemTapped,
 //       ),
 //     );
 //   }
 // }
+
+// class BottomNavBar extends StatelessWidget {
+//   final int selectedIndex;
+//   final Function(int) onItemTapped;
+
+//   const BottomNavBar({required this.selectedIndex, required this.onItemTapped});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         borderRadius: const BorderRadius.only(
+//           topLeft: Radius.circular(20),
+//           topRight: Radius.circular(20),
+//         ),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black12,
+//             blurRadius: 8,
+//             offset: Offset(0, -3),
+//           ),
+//         ],
+//       ),
+//       child: ClipRRect(
+//         borderRadius: const BorderRadius.only(
+//           topLeft: Radius.circular(20),
+//           topRight: Radius.circular(20),
+//         ),
+//         child: BottomNavigationBar(
+//           items: [
+//             const BottomNavigationBarItem(icon: Icon(Icons.search), label: ""),
+//             BottomNavigationBarItem(
+//               icon: Image.asset(
+//                 'assets/building_brown.png',
+//                 width: 24,
+//                 height: 24,
+//               ),
+//               label: "My Properties",
+//             ),
+//             const BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
+//             const BottomNavigationBarItem(icon: Icon(Icons.message), label: ""),
+//             const BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
+//           ],
+//           currentIndex: selectedIndex,
+//           onTap: onItemTapped,
+//           selectedItemColor: Colors.brown,
+//           unselectedItemColor: Colors.black54,
+//           showSelectedLabels: false,
+//           showUnselectedLabels: false,
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// HomeScreenOwner.dart
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -332,16 +381,16 @@ import 'home_page_owner.dart';
 import 'lib/page66(NoLoginProfile).dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
-import 'lib/favorites_screen.dart'; // Import the profile page
+import 'owner_houses.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeScreenOwner extends StatefulWidget {
+  const HomeScreenOwner({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _HomeScreenOwnerState createState() => _HomeScreenOwnerState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenOwnerState extends State<HomeScreenOwner> {
   bool _locationPermissionGranted = false;
   List<dynamic> _nearbyRentals = []; // Renamed from _displayedRentals
   bool _isLoading = true; // Start loading initially for nearby
@@ -654,7 +703,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1: // My Properties
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => FavoritesScreen()),
+          MaterialPageRoute(builder: (context) => OwnerHouses()),
         );
         break;
       case 2: // Home (This screen itself)
@@ -897,8 +946,13 @@ class BottomNavBar extends StatelessWidget {
               label: "Search",
             ), // Added labels for clarity
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border),
-              label: "Favorites",
+              icon: Image.asset(
+                // Consider using an Icon instead if possible
+                'assets/building_brown.png',
+                width: 24,
+                height: 24,
+              ),
+              label: "My Properties",
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.home),

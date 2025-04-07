@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dormitory_details.dart';
 import 'services/property_service.dart';
 import 'models/property_model.dart';
+import 'home_page_owner.dart';
 
 final FlutterSecureStorage storage = const FlutterSecureStorage();
 
@@ -50,22 +51,31 @@ class _OwnerHousesState extends State<OwnerHouses> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('My Rentals'),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
-      body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DormitoryDetailsPage()),
-          ).then((_) => _loadProperties()); // Refresh list after adding
-        },
-        backgroundColor: Colors.brown,
-        child: Icon(Icons.add),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePageOwner()),
+        );
+        return false; // Prevent default back navigation
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('My Rentals'),
+          backgroundColor: Colors.brown,
+          foregroundColor: Colors.white,
+        ),
+        body: _buildBody(),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => DormitoryDetailsPage()),
+            ).then((_) => _loadProperties());
+          },
+          backgroundColor: Colors.brown,
+          child: Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -119,7 +129,7 @@ class _OwnerHousesState extends State<OwnerHouses> {
       itemCount: properties.length,
       itemBuilder: (context, index) {
         final property = properties[index];
-        
+
         return Card(
           margin: EdgeInsets.only(bottom: 16),
           clipBehavior: Clip.antiAlias,
@@ -133,22 +143,25 @@ class _OwnerHousesState extends State<OwnerHouses> {
               // Property image
               property.imageUrls.isNotEmpty
                   ? Image.network(
-                      property.imageUrls[0],
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, _) => Container(
-                        height: 200,
-                        color: Colors.grey[300],
-                        child: Center(child: Icon(Icons.image_not_supported, size: 50)),
-                      ),
-                    )
+                    property.imageUrls[0],
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (ctx, err, _) => Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: Icon(Icons.image_not_supported, size: 50),
+                          ),
+                        ),
+                  )
                   : Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: Center(child: Icon(Icons.home, size: 50)),
-                    ),
-              
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: Center(child: Icon(Icons.home, size: 50)),
+                  ),
+
               // Property details
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -214,9 +227,7 @@ class _OwnerHousesState extends State<OwnerHouses> {
                         ),
                         Text(
                           '${property.roomsAvailable} room${property.roomsAvailable > 1 ? 's' : ''} available',
-                          style: TextStyle(
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
@@ -237,21 +248,21 @@ class _OwnerHousesState extends State<OwnerHouses> {
                         if (property.ac) _buildAmenityChip('AC'),
                         if (property.fan) _buildAmenityChip('Fan'),
                         if (property.chair) _buildAmenityChip('Chair'),
-                        if (property.ventilation) _buildAmenityChip('Ventilation'),
+                        if (property.ventilation)
+                          _buildAmenityChip('Ventilation'),
                         if (property.ups) _buildAmenityChip('UPS'),
                         if (property.sofa) _buildAmenityChip('Sofa'),
                         if (property.lamp) _buildAmenityChip('Lamp'),
-                        _buildAmenityChip('${property.bath} Bath${property.bath > 1 ? 's' : ''}'),
+                        _buildAmenityChip(
+                          '${property.bath} Bath${property.bath > 1 ? 's' : ''}',
+                        ),
                       ],
                     ),
-                    
+
                     SizedBox(height: 16),
                     Text(
                       'Listing Date: ${_formatDate(property.createdAt)}',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],
                 ),
@@ -262,7 +273,7 @@ class _OwnerHousesState extends State<OwnerHouses> {
       },
     );
   }
-  
+
   Widget _buildAmenityChip(String label) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -271,13 +282,10 @@ class _OwnerHousesState extends State<OwnerHouses> {
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.brown[100]!),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, color: Colors.brown),
-      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: Colors.brown)),
     );
   }
-  
+
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
