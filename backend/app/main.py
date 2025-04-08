@@ -593,50 +593,60 @@ async def send_message(
 #Retrieve chats
 @app.get("/chats", response_model=List[dict])
 async def get_user_chats(current_user: UserBase = Depends(get_current_user)):
-    from .database import get_messages_table, get_users_table, db_get_user_by_email
-    
+    from .database import get_messages_table, db_get_user_by_email
+
     try:
+        print("🔍 Fetching messages for user:", current_user.id)
+
         messages_table = get_messages_table()
-        
-        # Get all messages where current user is sender or receiver
+
+        print("📤 Querying messages where user is sender...")
         sent_messages = messages_table.query(
             IndexName='SenderIndex',
             KeyConditionExpression=boto3.dynamodb.conditions.Key('sender_id').eq(current_user.id)
         ).get('Items', [])
-        
+        print(f"✅ Sent messages found: {len(sent_messages)}")
+
+        print("📥 Querying messages where user is receiver...")
         received_messages = messages_table.query(
             IndexName='ReceiverIndex',
             KeyConditionExpression=boto3.dynamodb.conditions.Key('receiver_id').eq(current_user.id)
         ).get('Items', [])
-        
-        # Combine messages and extract unique chat partner IDs
+        print(f"✅ Received messages found: {len(received_messages)}")
+
+        # Combine messages
         all_messages = sent_messages + received_messages
-        
-        # Get unique chat partners and their latest message
+        print(f"📦 Total messages combined: {len(all_messages)}")
+
         chat_partners = {}
+
         for msg in all_messages:
+            print("🔁 Processing message:", msg)
+
             partner_id = msg['receiver_id'] if msg['sender_id'] == current_user.id else msg['sender_id']
             timestamp = msg.get('timestamp', '')
-            
+
+            # Only update if it's the latest message with this partner
             if partner_id not in chat_partners or timestamp > chat_partners[partner_id]['timestamp']:
-                # Get chat partner details
-                partner = db_get_user_by_email(partner_id)
+                print(f"🔍 Fetching user details for partner ID: {partner_id}")
+                partner = db_get_user_by_id(partner_id)
                 partner_name = partner.get('full_name') if partner else "Unknown User"
-                
+
                 chat_partners[partner_id] = {
                     'chat_partner_id': partner_id,
                     'chat_partner_name': partner_name,
                     'message': msg.get('message', ''),
                     'timestamp': timestamp
                 }
-        
-        # Convert to list and sort by timestamp (newest first)
+
         chat_list = list(chat_partners.values())
         chat_list.sort(key=lambda x: x['timestamp'], reverse=True)
-        
+
+        print("✅ Final chat list prepared:", chat_list)
         return chat_list
+
     except Exception as e:
-        print(f"Error fetching chats: {str(e)}")
+        print(f"❌ Error fetching chats: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch chats: {str(e)}"
@@ -1118,15 +1128,14 @@ async def search_properties_by_location(location: str):
 
 @app.get("/get_property/{property_id}", response_model=PropertyResponse)
 async def get_property_by_id(property_id: str):
-    """
-    Fetch a property by its ID from the DynamoDB table.
-    """
     try:
         properties_table = get_properties_table()
+        users_table = get_users_table()
 
-        # Fetch the item with the matching property_id (partition key)
+        # Step 1: Fetch property
         response = properties_table.get_item(Key={'id': property_id})
         property_item = response.get('Item')
+        print(f"Fetched property: {property_item}")
 
         if not property_item:
             raise HTTPException(
@@ -1134,8 +1143,32 @@ async def get_property_by_id(property_id: str):
                 detail=f"Property with ID {property_id} not found."
             )
 
-        print(f"Property fetched successfully for ID: {property_id}")
+        # Step 2: Fetch user using owner_email
+        owner_email = property_item.get('owner_email')
+        print(f"Owner email: {owner_email}")
+
+        if owner_email:
+            user_response = users_table.get_item(Key={'email': owner_email})
+            print(f"User response: {user_response}")
+            user_item = user_response.get('Item')
+            print(f"User item: {user_item}")
+
+            if user_item and 'full_name' in user_item:
+                property_item['owner_name'] = user_item['full_name']
+            else:
+                property_item['owner_name'] = 'Unknown'
+        else:
+            property_item['owner_name'] = 'Unknown'
+
         return property_item
+
+    except Exception as e:
+        print(f"Error fetching property by ID '{property_id}': {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get property: {str(e)}"
+        )
+
 
     except Exception as e:
         print(f"Error fetching property by ID '{property_id}': {str(e)}")

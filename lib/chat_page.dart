@@ -5,7 +5,7 @@ import 'services/flutter_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ChatPage extends StatefulWidget {
-  final int receiverId; // ID of the user you are chatting with
+  final String receiverId; // ID of the user you are chatting with
   final String receiverName;
 
   const ChatPage({

@@ -95,6 +95,7 @@ class PropertyResponse(BaseModel):
     sofa: bool = False
     lamp: bool = False
     bath: int = 1
+    owner_name: Optional[str] = None
 
     class Config:
         from_attributes = True

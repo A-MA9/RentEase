@@ -189,3 +189,8 @@ def db_verify_otp(email, otp):
     except ClientError as e:
         print(f"Error verifying OTP: {e}")
         return False
+    
+def db_get_user_by_id(user_id):
+    users_table = get_users_table()
+    response = users_table.get_item(Key={"id": user_id})
+    return response.get("Item")
