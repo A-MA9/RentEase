@@ -219,7 +219,7 @@
 //                         crossAxisAlignment: CrossAxisAlignment.start,
 //                         children: [
 //                           Text(
-//                             "₹ ${dormitory['price_per_month'] ?? '5000'}/month",
+//                             '₹ ${dormitory['price_per_month'] ?? '5000'}/month',
 //                             style: TextStyle(
 //                               fontSize: 20,
 //                               fontWeight: FontWeight.bold,
@@ -418,9 +418,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'panorama.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'check_in.dart';
+import 'chat_owner.dart';
+import 'login.dart';
 
 class RoomDetailsPage extends StatefulWidget {
-  final int propertyId;
+  final dynamic propertyId;
 
   const RoomDetailsPage({super.key, required this.propertyId});
 
@@ -431,6 +435,7 @@ class RoomDetailsPage extends StatefulWidget {
 class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Map<String, dynamic>? dormitory;
   bool isLoading = true;
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -438,22 +443,92 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     fetchPropertyDetails();
   }
 
-  Future<void> fetchPropertyDetails() async {
-    final url = Uri.parse(
-      'http://127.0.0.1:8000/properties/${widget.propertyId}',
-    );
-    final response = await http.get(url);
+  Future<bool> _isUserLoggedIn() async {
+    String? token = await storage.read(key: "access_token");
+    print("🔹 Checking Stored Token: $token"); // Debugging
+    return token != null;
+  }
 
-    if (response.statusCode == 200) {
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Login Required"),
+        content: const Text("You need to log in to chat with the owner."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+            child: const Text("Login"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleChat(BuildContext context) async {
+    bool isLoggedIn = await _isUserLoggedIn();
+
+    if (!isLoggedIn) {
+      _showLoginPrompt(context);
+      return;
+    }
+
+    // Extract logged-in user's ID from storage
+    String? senderId = await storage.read(key: "user_id");
+    if (senderId == null) {
+      _showLoginPrompt(context);
+      return;
+    }
+
+    // Navigate to ChatScreen and pass sender and receiver IDs
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          receiverId: dormitory!['owner_id'],
+          receiverName: dormitory!['owner_name'] ?? 'Property Owner',
+        ),
+      ),
+    );
+  }
+
+  Future<void> fetchPropertyDetails() async {
+    try {
+      final url = Uri.parse(
+        'http://10.0.2.2:8000/get_property/${widget.propertyId}',
+      );
+      print('Fetching property details from: $url');
+      
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          dormitory = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+        print('Failed to load property: ${response.statusCode} - ${response.body}');
+        setState(() {
+          isLoading = false;
+          dormitory = null;
+        });
+      }
+    } catch (e) {
+      print('Error fetching property details: $e');
       setState(() {
-        dormitory = json.decode(response.body);
         isLoading = false;
+        dormitory = null;
       });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      print('Failed to load property');
     }
   }
 
@@ -470,22 +545,52 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(dormitory!['name']), centerTitle: true),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          dormitory!['title'] ?? 'Property Details',
+          style: const TextStyle(color: Colors.black),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border, color: Colors.black),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.black),
+            onPressed: () {},
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (dormitory!['panorama_image_url'] != null)
+            if (dormitory!['panoramic_urls'] != null &&
+                dormitory!['panoramic_urls'].isNotEmpty)
               Stack(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
-                      dormitory!['panorama_image_url'],
+                      dormitory!['panoramic_urls'][0],
                       width: double.infinity,
                       height: 250,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 250,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error),
+                        );
+                      },
                     ),
                   ),
                   Positioned(
@@ -506,10 +611,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (context) => PanoramaView(
-                                  imageUrl: dormitory!['panorama_image_url'],
-                                ),
+                            builder: (context) => PanoramaView(
+                              imageUrl: dormitory!['panoramic_urls'][0],
+                            ),
                           ),
                         );
                       },
@@ -525,55 +629,188 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                   ),
                 ],
               ),
-            const SizedBox(height: 20),
-            Text(
-              dormitory!['name'],
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "₹${dormitory!['price']}/month",
-              style: const TextStyle(fontSize: 18, color: Colors.green),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              dormitory!['description'] ?? '',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            if (dormitory!['image_urls'] != null &&
-                dormitory!['image_urls'] is List)
-              Column(
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Gallery',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    dormitory!['title'] ?? 'No Title',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          dormitory!['property_type'] ?? 'Unknown Type',
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.location_on, color: Colors.grey),
+                      Text(dormitory!['location'] ?? 'Location not specified'),
+                    ],
                   ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    height: 120,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: dormitory!['image_urls'].length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              dormitory!['image_urls'][index],
-                              width: 160,
-                              height: 120,
-                              fit: BoxFit.cover,
+                  Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.orange),
+                      const Text(" 4.8 (110)"),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.verified, color: Colors.green),
+                      const Text(" 911 successful transactions"),
+                    ],
+                  ),
+                  const Divider(height: 30),
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/manager1.jpg'),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Dormitory managed by ${dormitory!['owner_name'] ?? 'Unknown Owner'}",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const Text(
+                            "Just got online",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 30),
+                  const Text(
+                    "Description",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    dormitory!['description'] ?? 'No description available',
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 20),
+                  if (dormitory!['image_urls'] != null &&
+                      dormitory!['image_urls'] is List &&
+                      dormitory!['image_urls'].isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Gallery',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: dormitory!['image_urls'].length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    dormitory!['image_urls'][index],
+                                    width: 160,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 160,
+                                        height: 120,
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.error),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "₹${dormitory!['price_per_month'] ?? '0'}/month",
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                          const Text(
+                            "Estimated Payment",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _handleChat(context),
+                            child: const Text(
+                              "Chat Owner",
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CheckInDatePage(
+                                    dormitoryName: dormitory!['title'] ?? 'Unknown Dormitory',
+                                    ownerEmail: dormitory!['owner_email'] ?? '',
+                                    totalAmount: double.parse(dormitory!['price_per_month']?.toString() ?? '0'),
+                                    propertyId: widget.propertyId.toString(),
+                                  ),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.brown,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              "Check Out",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
           ],
         ),
       ),

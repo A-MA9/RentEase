@@ -1,61 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'services/flutter_storage.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:async';
 
 class ChatPage extends StatefulWidget {
-  final int receiverId; // ID of the user you are chatting with
+  final String receiverId;
+  final String receiverName;
 
-  const ChatPage({Key? key, required this.receiverId}) : super(key: key);
+  const ChatPage({
+    Key? key,
+    required this.receiverId,
+    required this.receiverName,
+  }) : super(key: key);
 
   @override
-  _ChatPageState createState() => _ChatPageState();
+  State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List<Map<String, dynamic>> messages = [];
-  TextEditingController messageController = TextEditingController();
-  String? token;
-  int retryCount = 0;
-  static const maxRetries = 3;
+  final TextEditingController _messageController = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [];
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+  bool isLoading = true;
+  Timer? _messageTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadToken(); // Fetch token when the page loads
+    _loadMessages();
+    // Set up periodic message refresh
+    _messageTimer = Timer.periodic(const Duration(seconds: 3), (_) => _loadMessages());
   }
 
-  final baseUrl =
-      kIsWeb
-          ? 'http://localhost:8000' // For web
-          : 'http://10.0.2.2:8000'; // For Android emulator
-
-  Future<void> _loadToken() async {
-    String? savedToken = await SecureStorage.storage.read(key: "access_token");
-
-    if (savedToken != null) {
-      setState(() {
-        token = savedToken;
-      });
-      fetchMessages();
-    } else {
-      print("No token found");
-    }
+  @override
+  void dispose() {
+    _messageTimer?.cancel();
+    _messageController.dispose();
+    super.dispose();
   }
 
-  Future<void> fetchMessages() async {
-    if (token == null) return;
-    if (retryCount >= maxRetries) {
-      print("Max retries reached for fetching messages");
-      return;
-    }
-
-    final url = Uri.parse("$baseUrl/messages/${widget.receiverId}");
-    print("Fetching messages from: $url");
-    print("Using token: $token");
-
+  Future<void> _loadMessages() async {
     try {
+      final senderId = await storage.read(key: "user_id");
+      if (senderId == null) {
+        setState(() => isLoading = false);
+        return;
+      }
+
+      final url = Uri.parse(
+        'http://10.0.2.2:8000/messages/${widget.receiverId}',
+      );
+      print('Loading messages from: $url');
+      
+      final token = await storage.read(key: "access_token");
+      if (token == null) {
+        setState(() => isLoading = false);
+        return;
+      }
+
       final response = await http.get(
         url,
         headers: {
@@ -64,182 +67,139 @@ class _ChatPageState extends State<ChatPage> {
         },
       );
 
-      print("Response status: ${response.statusCode}");
-      print("Response body: ${response.body}");
-
       if (response.statusCode == 200) {
-        final List<dynamic> decodedMessages = json.decode(response.body);
-        if (mounted) {
-          setState(() {
-            messages = List<Map<String, dynamic>>.from(decodedMessages);
-            retryCount = 0; // Reset retry count on success
-          });
-        }
+        final List<dynamic> messages = json.decode(response.body);
+        setState(() {
+          _messages.clear();
+          _messages.addAll(messages.cast<Map<String, dynamic>>());
+          isLoading = false;
+        });
       } else {
-        print("Failed to load messages: ${response.body}");
-        print("Status code: ${response.statusCode}");
-        retryCount++;
-        if (mounted && retryCount < maxRetries) {
-          await Future.delayed(Duration(seconds: 2));
-          fetchMessages();
-        }
+        print('Failed to load messages: ${response.statusCode} - ${response.body}');
+        setState(() => isLoading = false);
       }
     } catch (e) {
-      print("Error fetching messages: $e");
-      retryCount++;
-      if (mounted && retryCount < maxRetries) {
-        await Future.delayed(Duration(seconds: 2));
-        fetchMessages();
-      }
+      print('Error loading messages: $e');
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> sendMessage(String message) async {
-    if (token == null) return;
-
-    final url = Uri.parse("$baseUrl/messages/send");
-    print("Sending message to: $url");
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
 
     try {
+      final senderId = await storage.read(key: "user_id");
+      final token = await storage.read(key: "access_token");
+      if (senderId == null || token == null) return;
+
+      final url = Uri.parse('http://10.0.2.2:8000/messages/send');
+      print('Sending message to: $url');
+      
       final response = await http.post(
         url,
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
-        body: jsonEncode({
-          "receiver_id": widget.receiverId,
-          "message": message,
-          "message_type": "text",
+        body: json.encode({
+          'receiver_id': widget.receiverId,
+          'message': _messageController.text.trim(),
+          'message_type': 'text',
         }),
       );
 
-      print("Send message response status: ${response.statusCode}");
-      print("Send message response body: ${response.body}");
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        messageController.clear();
-        retryCount = 0; // Reset retry count before fetching messages
-        await fetchMessages();
+        _messageController.clear();
+        _loadMessages();
       } else {
-        print("Failed to send message: ${response.body}");
-        print("Status code: ${response.statusCode}");
+        print('Failed to send message: ${response.statusCode} - ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send message')),
+        );
       }
     } catch (e) {
-      print("Error sending message: $e");
+      print('Error sending message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error sending message')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Chat")),
+      appBar: AppBar(
+        title: Text(widget.receiverName),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: messages.length,
-              reverse: false, // Keep messages in chronological order
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                final isMe = msg['sender_id'] != widget.receiverId;
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    reverse: true,
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isMe = message['sender_id'] == widget.receiverId;
 
-                // Format timestamp
-                DateTime timestamp = DateTime.parse(msg['timestamp']);
-                String formattedTime =
-                    "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                        isMe
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMe ? Colors.blue[100] : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        child: Column(
-                          crossAxisAlignment:
-                              isMe
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              msg['message'],
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 16,
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isMe ? Colors.blue[100] : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message['message'] ?? '',
+                                style: const TextStyle(fontSize: 16),
                               ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              formattedTime,
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: 12,
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatTimestamp(message['timestamp'] ?? ''),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: messageController,
-                    decoration: InputDecoration(
-                      hintText: "Type a message...",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(),
                     ),
-                    onSubmitted: (text) {
-                      if (text.isNotEmpty) {
-                        sendMessage(text);
-                      }
-                    },
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white),
-                    onPressed: () {
-                      if (messageController.text.isNotEmpty) {
-                        sendMessage(messageController.text);
-                      }
-                    },
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
                 ),
               ],
             ),
@@ -247,5 +207,14 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
     );
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final date = DateTime.parse(timestamp);
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '';
+    }
   }
 }

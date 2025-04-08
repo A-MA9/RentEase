@@ -7,6 +7,7 @@ import '../home_screen.dart'; // Import the home screen
 import 'favorites_screen.dart'; // Import the favorites screen which we'll create
 import '../services/flutter_storage.dart';
 import '../login.dart';
+import '../services/user_service.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -113,77 +114,91 @@ class ProfilePage extends StatelessWidget {
 class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
+    return FutureBuilder<Map<String, String?>>(
+      future: UserService.getLocalUserData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(color: Colors.brown));
+        }
+        
+        // Get user data from snapshot or use placeholders
+        final userData = snapshot.data ?? {};
+        final userName = userData['full_name'] ?? 'User Name';
+        final userPhone = userData['phone_number'] ?? 'Phone Number';
+        
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
+            ],
+          ),
+          child: Column(
             children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: NetworkImage(
-                'https://thumbs.dreamstime.com/b/default-avatar-profile-vector-user-profile-default-avatar-profile-vector-user-profile-profile-179376714.jpg'),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text(
-                    "Virat Kohli",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundImage: NetworkImage(
+                    'https://thumbs.dreamstime.com/b/default-avatar-profile-vector-user-profile-default-avatar-profile-vector-user-profile-profile-179376714.jpg'),
                   ),
-                  Text(
-                    "+919649390637",
-                    style: TextStyle(color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        userPhone,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PersonalInfoScreen(),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
                   ),
                 ],
               ),
-              Spacer(),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PersonalInfoScreen(),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: 0.6,
+                      backgroundColor: Colors.grey[300],
+                      color: Colors.brown,
                     ),
-                  );
-                },
-                child: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    "6/10 Profile data is filled in",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: 0.6,
-                  backgroundColor: Colors.grey[300],
-                  color: Colors.brown,
-                ),
-              ),
-              const SizedBox(width: 10),
+              const SizedBox(height: 5),
               Text(
-                "6/10 Profile data is filled in",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                "A complete profile can help us find more accurate results.",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
-          const SizedBox(height: 5),
-          Text(
-            "A complete profile can help us find more accurate results.",
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 }

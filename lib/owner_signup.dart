@@ -93,11 +93,13 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         // Store user data in secure storage
         final userData = json.decode(response.body);
         
-        // Store the email
-        await SecureStorage.storage.write(key: 'email', value: _emailController.text);
-        
         // Store user type
         await SecureStorage.storage.write(key: 'user_type', value: 'owner');
+        
+        // Store name and phone
+        await SecureStorage.storage.write(key: 'user_name', value: _nameController.text);
+        await SecureStorage.storage.write(key: 'user_phone', value: _phoneController.text);
+        await SecureStorage.storage.write(key: 'user_email', value: _emailController.text);
         
         // If there's a user_id in the response, store it
         if (userData['id'] != null) {

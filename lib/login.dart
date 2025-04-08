@@ -72,15 +72,41 @@ class _LoginScreenState extends State<LoginScreen> {
         final jwt = JWT.decode(token);
         String? userType = jwt.payload['user_type'];
         String? userId = jwt.payload['user_id'];
+        String? userEmail = jwt.payload['email'];
 
         if (userType != null && userId != null) {
           await SecureStorage.storage.write(key: 'user_type', value: userType);
-          await SecureStorage.storage.write(
-            key: 'user_id',
-            value: userId,
-          );
+          await SecureStorage.storage.write(key: 'user_id', value: userId);
+          await SecureStorage.storage.write(key: 'user_email', value: userEmail ?? email);
+          
           print("User Type: $userType");
           print("User ID: $userId");
+          
+          // Fetch user profile data
+          try {
+            final userProfileUrl = kIsWeb ? 'http://localhost:8000/users/profile' : 'http://10.0.2.2:8000/users/profile';
+            final profileResponse = await http.get(
+              Uri.parse(userProfileUrl),
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer $token"
+              },
+            );
+            
+            if (profileResponse.statusCode == 200) {
+              final profileData = jsonDecode(profileResponse.body);
+              
+              // Store user profile data in secure storage
+              await SecureStorage.storage.write(key: 'user_name', value: profileData['full_name']);
+              await SecureStorage.storage.write(key: 'user_phone', value: profileData['phone_number']);
+              
+              print("User profile data stored: ${profileData['full_name']}");
+            } else {
+              print("❌ Failed to fetch user profile: ${profileResponse.statusCode}");
+            }
+          } catch (e) {
+            print("❌ Error fetching user profile: $e");
+          }
 
           // ✅ Navigate based on user type
           if (userType == 'owner') {

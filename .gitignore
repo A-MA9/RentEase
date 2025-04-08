@@ -54,6 +54,17 @@ app.*.map.json
 aws-credentials.json
 aws.json
 aws-config.json
+.aws/
+.aws-credentials
+.aws-config
+**/aws-credentials.json
+**/aws.json
+**/aws-config.json
+**/.aws/
+**/.aws-credentials
+**/.aws-config
+credentials.json
+**/credentials.json
 
 # Backup files that may contain sensitive data
 *.bak

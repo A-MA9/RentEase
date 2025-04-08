@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'payment_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class CheckoutPage extends StatefulWidget {
   final DateTime selectedDate;
   final String dormitoryName;
   final String ownerEmail;
   final double totalAmount;
+  final String propertyId;
 
   const CheckoutPage({
     Key? key,
@@ -14,6 +18,7 @@ class CheckoutPage extends StatefulWidget {
     required this.dormitoryName,
     required this.ownerEmail,
     required this.totalAmount,
+    required this.propertyId,
   }) : super(key: key);
 
   @override
@@ -21,8 +26,70 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+  bool isLoading = false;
+
   String _formatDate(DateTime date) {
     return DateFormat('EEEE, d MMMM yyyy').format(date);
+  }
+
+  Future<void> _createBooking() async {
+    setState(() => isLoading = true);
+    try {
+      final userId = await storage.read(key: "user_id");
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to book')),
+        );
+        return;
+      }
+
+      final url = Uri.parse('http://10.0.2.2:8000/bookings/');
+      print('Creating booking with data: ${json.encode({
+        'user_id': userId,
+        'property_id': widget.propertyId,
+        'check_in_date': widget.selectedDate.toIso8601String(),
+        'total_amount': widget.totalAmount.toString(),
+      })}');
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+          'property_id': widget.propertyId,
+          'check_in_date': widget.selectedDate.toIso8601String(),
+          'total_amount': widget.totalAmount.toString(),
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Booking created successfully!')),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        print('Failed to create booking: ${response.statusCode} - ${response.body}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create booking: ${response.body}')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error creating booking: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating booking: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   @override
@@ -276,30 +343,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 6),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaymentPage(
-                    dormitoryName: widget.dormitoryName,
-                    ownerEmail: widget.ownerEmail,
-                    checkInDate: widget.selectedDate,
-                    totalAmount: widget.totalAmount,
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.brown,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: isLoading ? null : _createBooking,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown,
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 80),
-            ),
-            child: Text(
-              "Check out",
-              style: TextStyle(fontSize: 16, color: Colors.white),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Confirm Booking',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ),
         ],

@@ -376,6 +376,110 @@ async def get_users(current_user: UserBase = Depends(get_current_user)):
             detail=f"Failed to fetch users: {str(e)}"
         )
 
+# Get user profile by ID
+@app.get("/users/profile", response_model=UserResponse)
+async def get_user_profile(current_user: UserBase = Depends(get_current_user)):
+    try:
+        # Get the user from database to ensure we have the latest data
+        users_table = get_users_table()
+        response = users_table.get_item(
+            Key={"email": current_user.email}
+        )
+        user_data = response.get("Item", {})
+        
+        # Return the current user's profile
+        return UserResponse(
+            id=user_data.get("id", current_user.id),
+            full_name=user_data.get("full_name", current_user.full_name),
+            phone_number=user_data.get("phone_number", current_user.phone_number),
+            email=user_data.get("email", current_user.email),
+            user_type=user_data.get("user_type", "unknown")
+        )
+    except Exception as e:
+        print(f"Error fetching user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch user profile: {str(e)}"
+        )
+
+# Update user profile
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+
+@app.put("/users/profile", response_model=UserResponse)
+async def update_user_profile(
+    profile_update: UserProfileUpdate,
+    current_user: UserBase = Depends(get_current_user)
+):
+    try:
+        users_table = get_users_table()
+        
+        # Prepare update expression
+        update_expression = "SET "
+        expression_attribute_values = {}
+        expression_attribute_names = {}
+        
+        if profile_update.full_name is not None:
+            update_expression += "#full_name = :full_name, "
+            expression_attribute_values[":full_name"] = profile_update.full_name
+            expression_attribute_names["#full_name"] = "full_name"
+        
+        if profile_update.phone_number is not None:
+            update_expression += "#phone_number = :phone_number, "
+            expression_attribute_values[":phone_number"] = profile_update.phone_number
+            expression_attribute_names["#phone_number"] = "phone_number"
+        
+        # Remove trailing comma and space
+        update_expression = update_expression.rstrip(", ")
+        
+        # Update user in DynamoDB
+        if expression_attribute_values:
+            response = users_table.update_item(
+                Key={"email": current_user.email},
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_attribute_values,
+                ExpressionAttributeNames=expression_attribute_names,
+                ReturnValues="ALL_NEW"
+            )
+            
+            updated_user = response.get("Attributes", {})
+            
+            # Update current_user object with new values
+            if profile_update.full_name is not None:
+                current_user.full_name = profile_update.full_name
+            if profile_update.phone_number is not None:
+                current_user.phone_number = profile_update.phone_number
+                
+            return UserResponse(
+                id=updated_user.get("id", current_user.id),
+                full_name=updated_user.get("full_name", current_user.full_name),
+                phone_number=updated_user.get("phone_number", current_user.phone_number),
+                email=updated_user.get("email", current_user.email),
+                user_type=updated_user.get("user_type", "unknown")
+            )
+        else:
+            # No fields to update, just return current user
+            users_table = get_users_table()
+            response = users_table.get_item(
+                Key={"email": current_user.email}
+            )
+            user_data = response.get("Item", {})
+            
+            return UserResponse(
+                id=user_data.get("id", current_user.id),
+                full_name=user_data.get("full_name", current_user.full_name),
+                phone_number=user_data.get("phone_number", current_user.phone_number),
+                email=user_data.get("email", current_user.email),
+                user_type=user_data.get("user_type", "unknown")
+            )
+            
+    except Exception as e:
+        print(f"Error updating user profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update user profile: {str(e)}"
+        )
 
 @app.get("/properties/nearby", response_model=List[PropertyResponse])
 async def get_nearby_properties():
