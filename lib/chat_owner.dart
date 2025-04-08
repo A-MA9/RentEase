@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverId;
@@ -24,11 +26,12 @@ class _ChatPageState extends State<ChatPage> {
   final FlutterSecureStorage storage = const FlutterSecureStorage();
   bool isLoading = true;
   Timer? _messageTimer;
+  String? token;
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
+    _loadToken();
     // Set up periodic message refresh
     _messageTimer = Timer.periodic(const Duration(seconds: 3), (_) => _loadMessages());
   }
@@ -38,6 +41,19 @@ class _ChatPageState extends State<ChatPage> {
     _messageTimer?.cancel();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadToken() async {
+    String? savedToken = await storage.read(key: "access_token");
+
+    if (savedToken != null) {
+      setState(() {
+        token = savedToken;
+      });
+      _loadMessages();
+    } else {
+      print("No token found");
+    }
   }
 
   Future<void> _loadMessages() async {

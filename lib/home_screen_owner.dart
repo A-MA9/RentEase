@@ -24,7 +24,7 @@
 //   String? _error;
 //   int _selectedIndex = 2; // Default to home
 
-//   String get _baseUrl {
+//   String get baseUrl {
 //     if (kIsWeb) {
 //       return 'http://127.0.0.1:8000';
 //     }
@@ -70,7 +70,7 @@
 //     try {
 //       final response = await http
 //           .get(
-//             Uri.parse('${_baseUrl}/properties/nearby'),
+//             Uri.parse('${baseUrl}/properties/nearby'),
 //             headers: {
 //               'Accept': 'application/json',
 //               'Content-Type': 'application/json',
@@ -382,6 +382,7 @@ import 'lib/page66(NoLoginProfile).dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
 import 'owner_houses.dart';
+import 'constants.dart'; // Ensure you have this file for constants
 
 class HomeScreenOwner extends StatefulWidget {
   const HomeScreenOwner({super.key});
@@ -400,12 +401,12 @@ class _HomeScreenOwnerState extends State<HomeScreenOwner> {
   final TextEditingController _searchController = TextEditingController();
   // Removed _debounce and _isSearching
 
-  String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
-    }
-    return 'http://10.0.2.2:8000'; // Ensure correct IP
-  }
+  // String get baseUrl {
+  //   if (kIsWeb) {
+  //     return 'http://127.0.0.1:8000';
+  //   }
+  //   return 'http://10.0.2.2:8000'; // Ensure correct IP
+  // }
 
   @override
   void initState() {
@@ -498,7 +499,7 @@ class _HomeScreenOwnerState extends State<HomeScreenOwner> {
       final response = await http
           .get(
             Uri.parse(
-              '${_baseUrl}/properties/nearby',
+              '${baseUrl}/properties/nearby',
             ), // Assuming this endpoint exists
             headers: {
               'Accept': 'application/json',
