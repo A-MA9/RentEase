@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'services/flutter_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
 class ChatPage extends StatefulWidget {
   final int receiverId; // ID of the user you are chatting with
@@ -26,10 +27,10 @@ class _ChatPageState extends State<ChatPage> {
     _loadToken(); // Fetch token when the page loads
   }
 
-  final baseUrl =
-      kIsWeb
-          ? 'http://localhost:8000' // For web
-          : 'http://10.0.2.2:8000'; // For Android emulator
+  // final baseUrl =
+  //     kIsWeb
+  //         ? 'http://localhost:8000' // For web
+  //         : 'http://10.0.2.2:8000'; // For Android emulator
 
   Future<void> _loadToken() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");

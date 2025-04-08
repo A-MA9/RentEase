@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants.dart';
 
 class BookingService {
   static const storage = FlutterSecureStorage();
@@ -21,7 +22,7 @@ class BookingService {
 
       print('🔹 Using token: $token'); // Debug log
 
-      final baseUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+      // final baseUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
       final response = await http.post(
         Uri.parse('$baseUrl/bookings/'),
         headers: {
@@ -50,4 +51,4 @@ class BookingService {
       rethrow;
     }
   }
-} 
+}

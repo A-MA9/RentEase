@@ -3,8 +3,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
-final baseUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+// final baseUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
 final FlutterSecureStorage storage = const FlutterSecureStorage();
 
 class AddHouse extends StatefulWidget {
