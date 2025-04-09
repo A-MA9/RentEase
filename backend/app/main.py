@@ -13,7 +13,8 @@ from .models import (
 from .database import (
     db_save_user, db_get_user_by_email, db_update_user,
     db_save_otp, db_verify_otp, generate_id, get_timestamp,
-    get_properties_table, get_users_table, get_messages_table
+    get_properties_table, get_users_table, get_messages_table,
+    get_bookings_table, get_favorites_table
 )
 from typing import List, Optional
 from fastapi.responses import JSONResponse
@@ -158,7 +159,8 @@ async def register_owner(user: OwnerCreate):
         "password": hashed_password,
         "user_type": "owner",
         "created_at": get_timestamp(),
-        "verified": False
+        "verified": False,
+        "favorites": []  # Initialize with empty favorites list
     }
     
     # Save user to database
@@ -210,7 +212,8 @@ async def register_seeker(user: SeekerCreate):
         "password": hashed_password,
         "user_type": "seeker",
         "created_at": get_timestamp(),
-        "verified": False
+        "verified": False,
+        "favorites": []  # Initialize with empty favorites list
     }
     
     # Save user to database
@@ -813,14 +816,13 @@ async def create_booking(booking: Booking):
             'seeker_id': seeker_id,
             'start_date': booking.check_in_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'total_price': float(booking.total_amount),
+            'total_price': booking.total_amount,  # Use string directly for DynamoDB compatibility
             'status': 'completed',
             'created_at': get_timestamp()
         }
         
         # Get bookings table
-        dynamodb = boto3.resource('dynamodb')
-        bookings_table = dynamodb.Table('bookings')
+        bookings_table = get_bookings_table()
         
         # Save booking to DynamoDB
         bookings_table.put_item(Item=booking_data)
@@ -850,7 +852,7 @@ async def create_booking(booking: Booking):
             detail=f"Failed to create booking: {str(e)}"
         )
 
-def send_booking_confirmation_email(seeker_email: str, dormitory_name: str, check_in_date: date, total_amount: float):
+def send_booking_confirmation_email(seeker_email: str, dormitory_name: str, check_in_date: date, total_amount: str):
     try:
         msg = MIMEMultipart()
         msg['From'] = os.getenv("SMTP_USERNAME")
@@ -1175,6 +1177,244 @@ async def get_property_by_id(property_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get property: {str(e)}"
+        )
+
+# Add a new endpoint to get user email by ID
+@app.get("/get_user_email/{user_id}")
+async def get_user_email_by_id(user_id: str):
+    """
+    Fetches a user's email by their ID.
+    This endpoint is specifically for retrieving owner email for property detail pages.
+    """
+    try:
+        # Use the existing helper function to get the user
+        user = db_get_user_by_id(user_id)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {user_id} not found."
+            )
+        
+        # Only return the email for privacy reasons
+        return {"email": user.get("email")}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        print(f"Error fetching user email by ID '{user_id}': {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get user email: {str(e)}"
+        )
+
+# Favorites functionality
+@app.post("/favorites/toggle")
+async def toggle_favorite(
+    body: dict = Body(...),
+    current_user: UserBase = Depends(get_current_user)
+):
+    """Toggle a property as favorite for the current user"""
+    try:
+        print(f"==== TOGGLE FAVORITE REQUEST ====")
+        print(f"Body received: {body}")
+        print(f"Current user: {current_user.email}")
+        
+        # Extract property_id from request body
+        # Check if body is a dict with property_id or a direct string value
+        if isinstance(body, dict) and 'property_id' in body:
+            property_id = str(body['property_id'])
+            print(f"Using property_id from JSON: {property_id}")
+        else:
+            # If we somehow got a string directly
+            property_id = str(body)
+            print(f"Using body directly as property_id: {property_id}")
+            
+        if not property_id:
+            print(f"ERROR: Empty property_id")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Property ID is required"
+            )
+            
+        # Get the favorites table
+        favorites_table = get_favorites_table()
+        print(f"Got favorites table")
+        
+        # Check if the favorite already exists
+        try:
+            # Try to get the item from favorites table
+            response = favorites_table.get_item(
+                Key={
+                    "user_email": current_user.email,
+                    "property_id": property_id
+                }
+            )
+            item_exists = "Item" in response
+            print(f"Favorite exists check: {item_exists}")
+            
+            if item_exists:
+                # Delete the favorite
+                print(f"Removing favorite: {property_id}")
+                favorites_table.delete_item(
+                    Key={
+                        "user_email": current_user.email,
+                        "property_id": property_id
+                    }
+                )
+                action = "removed from"
+                is_favorite = False
+            else:
+                # Add the favorite
+                print(f"Adding favorite: {property_id}")
+                # Get property details to store with favorite
+                properties_table = get_properties_table()
+                property_response = properties_table.get_item(
+                    Key={"id": property_id}
+                )
+                property_item = property_response.get("Item", {})
+                
+                # Create favorite item
+                favorite_item = {
+                    "user_email": current_user.email,
+                    "property_id": property_id,
+                    "user_id": current_user.id,
+                    "created_at": get_timestamp(),
+                    # Include basic property details for quick display
+                    "property_title": property_item.get("title", "Unknown Property"),
+                    "property_location": property_item.get("location", ""),
+                    "property_price": property_item.get("price_per_month", ""),
+                    "property_image": property_item.get("image_urls", [])[0] if property_item.get("image_urls") else ""
+                }
+                
+                # Save to favorites table
+                favorites_table.put_item(Item=favorite_item)
+                action = "added to"
+                is_favorite = True
+            
+            print(f"Successfully {action} favorites")
+            return {
+                "success": True,
+                "message": f"Property {action} favorites",
+                "is_favorite": is_favorite
+            }
+        
+        except Exception as e:
+            print(f"Error checking or toggling favorite: {str(e)}")
+            raise
+        
+    except Exception as e:
+        print(f"ERROR in toggle_favorite: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to toggle favorite: {str(e)}"
+        )
+
+@app.get("/favorites")
+async def get_favorites(current_user: UserBase = Depends(get_current_user)):
+    """Get all favorite properties for the current user"""
+    try:
+        print(f"==== GET FAVORITES REQUEST ====")
+        print(f"User: {current_user.email}")
+        
+        # Get the favorites table
+        favorites_table = get_favorites_table()
+        
+        # Query favorites table for user's favorites
+        response = favorites_table.query(
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('user_email').eq(current_user.email)
+        )
+        
+        favorites_items = response.get('Items', [])
+        print(f"Found {len(favorites_items)} favorites")
+        
+        if not favorites_items:
+            print("No favorites found for user")
+            return []
+        
+        # Get properties table to fetch complete property details
+        properties_table = get_properties_table()
+        favorite_properties = []
+        
+        # Fetch each favorite property's complete details
+        for favorite in favorites_items:
+            property_id = favorite.get('property_id')
+            try:
+                print(f"Getting property {property_id}")
+                property_response = properties_table.get_item(Key={"id": property_id})
+                property_item = property_response.get("Item")
+                
+                if property_item:
+                    print(f"Property found: {property_item.get('title', 'Unknown')}")
+                    # Add is_favorite flag
+                    property_item['is_favorite'] = True
+                    favorite_properties.append(property_item)
+                else:
+                    print(f"No property found with ID {property_id}")
+                    # Still include basic favorite details from favorites table
+                    basic_property = {
+                        'id': property_id,
+                        'title': favorite.get('property_title', 'Unknown Property'),
+                        'location': favorite.get('property_location', ''),
+                        'price_per_month': favorite.get('property_price', ''),
+                        'image_urls': [favorite.get('property_image', '')] if favorite.get('property_image') else [],
+                        'is_favorite': True
+                    }
+                    favorite_properties.append(basic_property)
+            except Exception as e:
+                print(f"Error fetching property {property_id}: {str(e)}")
+                # Continue with other properties if one fails
+                continue
+        
+        print(f"Returning {len(favorite_properties)} favorite properties")
+        return favorite_properties
+        
+    except Exception as e:
+        print(f"ERROR in get_favorites: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get favorites: {str(e)}"
+        )
+
+@app.get("/check_favorite/{property_id}")
+async def check_favorite(
+    property_id: str,
+    current_user: UserBase = Depends(get_current_user)
+):
+    """Check if a property is in user's favorites"""
+    try:
+        print(f"==== CHECK FAVORITE REQUEST ====")
+        print(f"Property ID: {property_id}")
+        print(f"User: {current_user.email}")
+        
+        # Get the favorites table
+        favorites_table = get_favorites_table()
+        
+        # Check if the favorite exists
+        response = favorites_table.get_item(
+            Key={
+                "user_email": current_user.email,
+                "property_id": property_id
+            }
+        )
+        
+        is_favorite = "Item" in response
+        print(f"Is favorite: {is_favorite}")
+        
+        return {"is_favorite": is_favorite}
+        
+    except Exception as e:
+        print(f"ERROR in check_favorite: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check favorite: {str(e)}"
         )
 
 if __name__ == '__main__':

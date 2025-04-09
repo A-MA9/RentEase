@@ -435,12 +435,29 @@ class RoomDetailsPage extends StatefulWidget {
 class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Map<String, dynamic>? dormitory;
   bool isLoading = true;
+  bool isFavorite = false;
+  bool isCheckingFavorite = true;
   final FlutterSecureStorage storage = const FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
     fetchPropertyDetails();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // We can refresh favorite status here to ensure it's up to date
+    if (!isLoading && !isCheckingFavorite) {
+      _checkFavorite();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Clean up any resources
+    super.dispose();
   }
 
   Future<bool> _isUserLoggedIn() async {
@@ -454,7 +471,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Login Required"),
-        content: const Text("You need to log in to chat with the owner."),
+        content: const Text("You need to log in to perform this action."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -473,6 +490,136 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _toggleFavorite() async {
+    bool isLoggedIn = await _isUserLoggedIn();
+    if (!isLoggedIn) {
+      _showLoginPrompt(context);
+      return;
+    }
+
+    String? token = await storage.read(key: "access_token");
+    if (token == null) {
+      _showLoginPrompt(context);
+      return;
+    }
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      // Print debug info
+      print('🔹 Attempting to toggle favorite for property: ${widget.propertyId}');
+      print('🔹 User token available: ${token.isNotEmpty}');
+      
+      final url = Uri.parse('http://10.0.2.2:8000/favorites/toggle');
+      final Map<String, dynamic> requestData = {
+        'property_id': widget.propertyId.toString()
+      };
+      
+      print('🔹 Sending request to $url');
+      print('🔹 Request data: $requestData');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(requestData),
+      );
+
+      print('🔹 Response status code: ${response.statusCode}');
+      print('🔹 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          isFavorite = data['is_favorite'];
+          isLoading = false;
+        });
+        
+        // Show success message
+        final action = isFavorite ? 'added to' : 'removed from';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Property $action favorites'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: isFavorite ? Colors.green : Colors.grey,
+          ),
+        );
+      } else {
+        print('❌ Failed to toggle favorite: ${response.statusCode} - ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update favorites. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Network error. Please check your connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _checkFavorite() async {
+    bool isLoggedIn = await _isUserLoggedIn();
+    if (!isLoggedIn) {
+      setState(() {
+        isCheckingFavorite = false;
+      });
+      return;
+    }
+
+    String? token = await storage.read(key: "access_token");
+    if (token == null) {
+      setState(() {
+        isCheckingFavorite = false;
+      });
+      return;
+    }
+
+    try {
+      final url = Uri.parse('http://10.0.2.2:8000/check_favorite/${widget.propertyId}');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          isFavorite = data['is_favorite'];
+          isCheckingFavorite = false;
+        });
+      } else {
+        print('Failed to check favorite: ${response.statusCode} - ${response.body}');
+        setState(() {
+          isCheckingFavorite = false;
+        });
+      }
+    } catch (e) {
+      print('Error checking favorite: $e');
+      setState(() {
+        isCheckingFavorite = false;
+      });
+    }
   }
 
   void _handleChat(BuildContext context) async {
@@ -512,15 +659,37 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print('🔹 Full property response: $responseData');
+        
+        // Check for owner_id to fetch owner email
+        if (responseData.containsKey('owner_id') && responseData['owner_id'] != null) {
+          String ownerId = responseData['owner_id'];
+          print('🔹 Found owner_id: $ownerId');
+          
+          // Fetch owner email using owner_id
+          await fetchOwnerEmail(ownerId).then((ownerEmail) {
+            if (ownerEmail != null && ownerEmail.isNotEmpty) {
+              responseData['owner_email'] = ownerEmail;
+              print('🔹 Successfully fetched owner email: $ownerEmail');
+            }
+          });
+        } else {
+          print('❌ No owner_id found in response');
+        }
+        
         setState(() {
-          dormitory = json.decode(response.body);
+          dormitory = responseData;
           isLoading = false;
         });
+        
+        _checkFavorite();
       } else {
         print('Failed to load property: ${response.statusCode} - ${response.body}');
         setState(() {
           isLoading = false;
           dormitory = null;
+          isCheckingFavorite = false;
         });
       }
     } catch (e) {
@@ -528,7 +697,37 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       setState(() {
         isLoading = false;
         dormitory = null;
+        isCheckingFavorite = false;
       });
+    }
+  }
+  
+  Future<String?> fetchOwnerEmail(String ownerId) async {
+    try {
+      // Endpoint to fetch user details by ID
+      final url = Uri.parse('http://10.0.2.2:8000/get_user_email/$ownerId');
+      print('Fetching owner email from: $url');
+      
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        print('🔹 Owner data response: $responseData');
+        
+        // Extract email from response
+        if (responseData.containsKey('email')) {
+          return responseData['email'];
+        } else {
+          print('❌ No email field found in user response');
+          return null;
+        }
+      } else {
+        print('❌ Failed to fetch owner email: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error fetching owner email: $e');
+      return null;
     }
   }
 
@@ -558,10 +757,25 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {},
-          ),
+          isCheckingFavorite 
+          ? const SizedBox(
+              width: 48,
+              height: 48,
+              child: Padding(
+                padding: EdgeInsets.all(12.0),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                ),
+              ),
+            )
+          : IconButton(
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : Colors.black,
+              ),
+              onPressed: _toggleFavorite,
+            ),
           IconButton(
             icon: const Icon(Icons.share, color: Colors.black),
             onPressed: () {},
@@ -780,12 +994,35 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CheckInDatePage(
-                                    dormitoryName: dormitory!['title'] ?? 'Unknown Dormitory',
-                                    ownerEmail: dormitory!['owner_email'] ?? '',
-                                    totalAmount: double.parse(dormitory!['price_per_month']?.toString() ?? '0'),
-                                    propertyId: widget.propertyId.toString(),
-                                  ),
+                                  builder: (context) {
+                                    final ownerEmail = dormitory!['owner_email'];
+                                    
+                                    if (ownerEmail == null || ownerEmail.isEmpty) {
+                                      print('⚠️ Warning: No owner email found for property ${widget.propertyId}, using owner_id instead');
+                                      final ownerId = dormitory!['owner_id'];
+                                    }
+                                    
+                                    return CheckInDatePage(
+                                      dormitoryName: dormitory!['title'] ?? 'Unknown Dormitory',
+                                      ownerEmail: ownerEmail ?? dormitory!['owner_id'] ?? '',
+                                      totalAmount: double.parse(dormitory!['price_per_month']?.toString() ?? '0'),
+                                      propertyId: widget.propertyId.toString(),
+                                      dormitoryImage: dormitory!['image_urls'] != null && dormitory!['image_urls'].isNotEmpty
+                                          ? dormitory!['image_urls'][0]
+                                          : 'https://via.placeholder.com/400x200?text=No+Image',
+                                      dormitoryDescription: dormitory!['description'] ?? '',
+                                      amenities: {
+                                        'tv': dormitory!['tv'] ?? false,
+                                        'fan': dormitory!['fan'] ?? false,
+                                        'ac': dormitory!['ac'] ?? false,
+                                        'chair': dormitory!['chair'] ?? false,
+                                        'ventilation': dormitory!['ventilation'] ?? false,
+                                        'ups': dormitory!['ups'] ?? false,
+                                        'sofa': dormitory!['sofa'] ?? false,
+                                        'lamp': dormitory!['lamp'] ?? false,
+                                      },
+                                    );
+                                  },
                                 ),
                               );
                             },

@@ -6,11 +6,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 // Import the NEW SearchPage (make sure the path is correct)
 import 'search_page.dart';
 import 'home_page_owner.dart';
+import 'home_page.dart';
 import 'lib/page66(NoLoginProfile).dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
-import 'lib/favorites_screen.dart'; // Import the profile page
+import 'favorites_screen.dart'; // Corrected import path
 import 'room_details.dart'; // Import the RoomDetailsPage
+import 'services/flutter_storage.dart';
+import 'owner_houses.dart';
+import 'navigation_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -315,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // --- Navigation Logic (Mostly Unchanged, ensure index 2 logic is correct) ---
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
     if (_selectedIndex == index) return; // Avoid reloading the same page
 
     // Update the selected index visually
@@ -323,219 +327,198 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedIndex = index;
     });
 
-    // Use Navigator.pushReplacement to avoid building up the stack infinitely
-    switch (index) {
-      case 0: // Search Icon - Navigate to SearchPage
-        final query = _searchController.text.trim();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SearchPage(initialQuery: query),
-          ), // Pass initial query
-        );
-        // Reset index visually back to home if needed after push
-        // Future.delayed(Duration(milliseconds: 100), () => setState(() => _selectedIndex = 2));
-        break;
-      case 1: // My Properties
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => FavoritesScreen()),
-        );
-        break;
-      case 2: // Home (This screen itself)
-        // If already here, do nothing or maybe refresh nearby rentals
-        if (!_isLoading) {
-          // Avoid refreshing if already loading
-          _checkLocationPermission(); // Refresh location/nearby
-        }
-        break;
-      case 3: // Messages
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ChatListScreen()),
-        );
-        break;
-      case 4: // Profile
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ProfileRouter()),
-        );
-        break;
+    // Handle navigation
+    if (index == 2) {
+      // Special case for home - refresh nearby properties
+      if (!_isLoading) {
+        _checkLocationPermission(); // Refresh location/nearby
+      }
+    } else {
+      // Use our NavigationHelper for other cases
+      await NavigationHelper.handleBottomNavigation(
+        context, 
+        index,
+        searchQuery: _searchController.text.trim(),
+      );
     }
   }
 
   // --- Build Method ---
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pushReplacement(
-              // Go back to main owner dashboard
-              context,
-              MaterialPageRoute(builder: (context) => HomePageOwner()),
-            );
-          },
-        ),
-        title: const Text(
-          // Static Title
-          "Find Rentals",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    return FutureBuilder<bool>(
+      future: NavigationHelper.isUserOwner(),
+      builder: (context, snapshot) {
+        final isOwner = snapshot.data ?? false;
+        
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 1,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () async {
+                await NavigationHelper.navigateToHomeBasedOnUserType(context);
+              },
+            ),
+            title: const Text(
+              // Static Title
+              "Find Rentals",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
           ),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Search Bar ---
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Search Bar ---
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText:
+                            'Search by location and press enter...', // Updated hint
+                        prefixIcon: Icon(Icons.search, color: Colors.brown),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 20,
+                        ),
+                      ),
+                      // *** Trigger navigation on submission ***
+                      onSubmitted: (String query) {
+                        final trimmedQuery = query.trim();
+                        if (trimmedQuery.isNotEmpty) {
+                          print(
+                            "Navigating to SearchPage with query: $trimmedQuery",
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => SearchPage(
+                                    initialQuery: trimmedQuery,
+                                  ), // Pass the query
+                            ),
+                          );
+                        }
+                      },
+                      textInputAction:
+                          TextInputAction.search, // Show search icon on keyboard
+                    ),
+                  ),
+                ),
+
+                // --- Current Location & Popular (Always visible now) ---
+                ListTile(
+                  leading: const Icon(Icons.my_location, color: Colors.brown),
+                  title: const Text("Use My Current Location"),
+                  subtitle: Text(
+                    _locationPermissionGranted
+                        ? "Showing nearby rentals below"
+                        : "Tap to enable location",
+                  ),
+                  onTap: _requestLocationPermission,
+                  dense: true,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Popular Locations",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: [
+                    ActionChip(
+                      avatar: Icon(
+                        Icons.location_city,
+                        size: 16,
+                        color: Colors.brown,
+                      ),
+                      label: Text("Jaipur"),
+                      onPressed: () {
+                        // Navigate to SearchPage when chip tapped
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SearchPage(initialQuery: "Jaipur"),
+                          ),
+                        );
+                      },
+                      backgroundColor: Colors.brown.withOpacity(0.1),
+                    ),
+                    ActionChip(
+                      avatar: Icon(Icons.store, size: 16, color: Colors.brown),
+                      label: Text("Gandhi Market"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    SearchPage(initialQuery: "Gandhi Market"),
+                          ),
+                        );
+                      },
+                      backgroundColor: Colors.brown.withOpacity(0.1),
+                    ),
+                    ActionChip(
+                      avatar: Icon(Icons.home_work, size: 16, color: Colors.brown),
+                      label: Text("Bagru"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SearchPage(initialQuery: "Bagru"),
+                          ),
+                        );
+                      },
+                      backgroundColor: Colors.brown.withOpacity(0.1),
                     ),
                   ],
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText:
-                        'Search by location and press enter...', // Updated hint
-                    prefixIcon: Icon(Icons.search, color: Colors.brown),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 20,
-                    ),
-                  ),
-                  // *** Trigger navigation on submission ***
-                  onSubmitted: (String query) {
-                    final trimmedQuery = query.trim();
-                    if (trimmedQuery.isNotEmpty) {
-                      print(
-                        "Navigating to SearchPage with query: $trimmedQuery",
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => SearchPage(
-                                initialQuery: trimmedQuery,
-                              ), // Pass the query
-                        ),
-                      );
-                    }
-                  },
-                  textInputAction:
-                      TextInputAction.search, // Show search icon on keyboard
-                ),
-              ),
-            ),
+                const SizedBox(height: 20),
 
-            // --- Current Location & Popular (Always visible now) ---
-            ListTile(
-              leading: const Icon(Icons.my_location, color: Colors.brown),
-              title: const Text("Use My Current Location"),
-              subtitle: Text(
-                _locationPermissionGranted
-                    ? "Showing nearby rentals below"
-                    : "Tap to enable location",
-              ),
-              onTap: _requestLocationPermission,
-              dense: true,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Popular Locations",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              children: [
-                ActionChip(
-                  avatar: Icon(
-                    Icons.location_city,
-                    size: 16,
-                    color: Colors.brown,
-                  ),
-                  label: Text("Jaipur"),
-                  onPressed: () {
-                    // Navigate to SearchPage when chip tapped
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => SearchPage(initialQuery: "Jaipur"),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.brown.withOpacity(0.1),
+                // --- Results Title (Static now for nearby) ---
+                const Text(
+                  "Popular Rentals Near You",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                ActionChip(
-                  avatar: Icon(Icons.store, size: 16, color: Colors.brown),
-                  label: Text("Gandhi Market"),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                SearchPage(initialQuery: "Gandhi Market"),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.brown.withOpacity(0.1),
-                ),
-                ActionChip(
-                  avatar: Icon(Icons.home_work, size: 16, color: Colors.brown),
-                  label: Text("Bagru"),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SearchPage(initialQuery: "Bagru"),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.brown.withOpacity(0.1),
-                ),
+                const SizedBox(height: 10),
+
+                // --- Property List (Only Nearby) ---
+                _buildPropertyList(),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // --- Results Title (Static now for nearby) ---
-            const Text(
-              "Popular Rentals Near You",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 10),
-
-            // --- Property List (Only Nearby) ---
-            _buildPropertyList(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onItemTapped,
-      ),
+          ),
+          bottomNavigationBar: SmartBottomNavBar(
+            selectedIndex: _selectedIndex,
+            onItemTapped: _onItemTapped,
+            isOwner: isOwner,
+          ),
+        );
+      }
     );
   }
 }

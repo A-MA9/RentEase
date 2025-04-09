@@ -10,6 +10,9 @@ class CheckInDatePage extends StatefulWidget {
   final String ownerEmail;
   final double totalAmount;
   final String propertyId;
+  final String dormitoryImage;
+  final String dormitoryDescription;
+  final Map<String, dynamic> amenities;
 
   const CheckInDatePage({
     Key? key,
@@ -17,6 +20,9 @@ class CheckInDatePage extends StatefulWidget {
     required this.ownerEmail,
     required this.totalAmount,
     required this.propertyId,
+    required this.dormitoryImage,
+    required this.dormitoryDescription,
+    required this.amenities,
   }) : super(key: key);
 
   @override
@@ -176,6 +182,9 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
                         ownerEmail: widget.ownerEmail,
                         totalAmount: widget.totalAmount,
                         propertyId: widget.propertyId,
+                        dormitoryImage: widget.dormitoryImage,
+                        dormitoryDescription: widget.dormitoryDescription,
+                        amenities: widget.amenities,
                       ),
                     ),
                   );
@@ -188,7 +197,7 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
                   padding: EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: Text(
-                  "Save",
+                  "Continue to Checkout",
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),

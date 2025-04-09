@@ -21,242 +21,271 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String selectedPaymentMethod = 'UPI';
+  String selectedPaymentMethod = 'upi';
+  final TextEditingController upiController = TextEditingController();
+  final TextEditingController cardNumberController = TextEditingController();
+  final TextEditingController expiryController = TextEditingController();
+  final TextEditingController cvvController = TextEditingController();
   bool isProcessing = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "Payment",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Select Payment Method",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            _buildPaymentMethodCard(
-              'UPI',
-              'Pay using UPI',
-              Icons.payment,
-              Colors.blue,
-            ),
-            SizedBox(height: 12),
-            _buildPaymentMethodCard(
-              'Credit Card',
-              'Pay using Credit Card',
-              Icons.credit_card,
-              Colors.orange,
-            ),
-            if (selectedPaymentMethod == 'Credit Card') ...[
-              SizedBox(height: 24),
-              Text(
-                "Card Details",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Card Number',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.credit_card),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Expiry Date',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'CVV',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock),
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            Spacer(),
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    "₹5500",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 6),
-                  ElevatedButton(
-                    onPressed: isProcessing ? null : _processPayment,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 80),
-                    ),
-                    child: isProcessing
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            "Pay Now",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaymentMethodCard(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color color,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedPaymentMethod = title;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selectedPaymentMethod == title ? Colors.brown : Colors.grey[300]!,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Radio<String>(
-              value: title,
-              groupValue: selectedPaymentMethod,
-              onChanged: (value) {
-                setState(() {
-                  selectedPaymentMethod = value!;
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void dispose() {
+    upiController.dispose();
+    cardNumberController.dispose();
+    expiryController.dispose();
+    cvvController.dispose();
+    super.dispose();
   }
 
   Future<void> _processPayment() async {
+    if (selectedPaymentMethod == 'upi' && upiController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter UPI ID')),
+      );
+      return;
+    }
+
+    if (selectedPaymentMethod == 'card') {
+      if (cardNumberController.text.isEmpty ||
+          expiryController.text.isEmpty ||
+          cvvController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all card details')),
+        );
+        return;
+      }
+    }
+
     setState(() {
       isProcessing = true;
     });
 
     // Simulate payment processing
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
 
     setState(() {
       isProcessing = false;
     });
 
-    // Navigate to success page with booking information
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PaymentSuccessPage(
-          dormitoryName: widget.dormitoryName,
-          ownerEmail: widget.ownerEmail,
-          checkInDate: widget.checkInDate,
-          totalAmount: widget.totalAmount,
+    // Navigate to success page
+    if (mounted) {
+      print('🔹 Payment processed successfully');
+      print('🔹 Dormitory name: ${widget.dormitoryName}');
+      print('🔹 Owner email: ${widget.ownerEmail}');
+      print('🔹 Check-in date: ${widget.checkInDate}');
+      print('🔹 Total amount: ${widget.totalAmount}');
+      
+      // Check if owner email is empty
+      if (widget.ownerEmail.isEmpty) {
+        print('❌ Owner email is empty in payment page!');
+      }
+      
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentSuccessPage(
+            dormitoryName: widget.dormitoryName,
+            ownerEmail: widget.ownerEmail,
+            checkInDate: widget.checkInDate,
+            totalAmount: widget.totalAmount,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Payment'),
+        backgroundColor: Colors.brown,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Payment Summary
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Payment Summary',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildSummaryRow('Dormitory', widget.dormitoryName),
+                    _buildSummaryRow('Check-in Date', widget.checkInDate.toString().split(' ')[0]),
+                    _buildSummaryRow('Total Amount', '₹${widget.totalAmount}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Payment Method Selection
+              const Text(
+                'Select Payment Method',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildPaymentMethodOption('UPI', 'upi'),
+              _buildPaymentMethodOption('Credit Card', 'card'),
+              const SizedBox(height: 20),
+
+              // Payment Details Form
+              if (selectedPaymentMethod == 'upi')
+                _buildUpiForm()
+              else
+                _buildCardForm(),
+
+              const SizedBox(height: 20),
+
+              // Pay Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isProcessing ? null : _processPayment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: isProcessing
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Pay Now',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodOption(String label, String value) {
+    return RadioListTile<String>(
+      title: Text(label),
+      value: value,
+      groupValue: selectedPaymentMethod,
+      onChanged: (String? newValue) {
+        setState(() {
+          selectedPaymentMethod = newValue!;
+        });
+      },
+      activeColor: Colors.brown,
+    );
+  }
+
+  Widget _buildUpiForm() {
+    return TextField(
+      controller: upiController,
+      decoration: InputDecoration(
+        labelText: 'Enter UPI ID',
+        hintText: 'example@upi',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardForm() {
+    return Column(
+      children: [
+        TextField(
+          controller: cardNumberController,
+          decoration: InputDecoration(
+            labelText: 'Card Number',
+            hintText: '1234 5678 9012 3456',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(16),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: expiryController,
+                decoration: InputDecoration(
+                  labelText: 'MM/YY',
+                  hintText: '12/25',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: cvvController,
+                decoration: InputDecoration(
+                  labelText: 'CVV',
+                  hintText: '123',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(3),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 } 

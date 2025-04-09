@@ -27,6 +27,7 @@ MESSAGES_TABLE = 'RentEase_Messages'
 PROPERTIES_TABLE = 'RentEase_Properties'
 BOOKINGS_TABLE = 'RentEase_Bookings'
 OTP_TABLE = 'RentEase_OTP'
+FAVORITES_TABLE = 'RentEase_Favorites'
 
 def create_tables_if_not_exist():
     """
@@ -170,6 +171,25 @@ def create_tables_if_not_exist():
             print(f"Table {OTP_TABLE} created successfully")
         except ClientError as e:
             print(f"Error creating table {OTP_TABLE}: {e}")
+    
+    # Create Favorites table if it doesn't exist
+    if FAVORITES_TABLE not in existing_table_names:
+        try:
+            dynamodb.create_table(
+                TableName=FAVORITES_TABLE,
+                KeySchema=[
+                    {'AttributeName': 'user_email', 'KeyType': 'HASH'},  # Partition key
+                    {'AttributeName': 'property_id', 'KeyType': 'RANGE'},  # Sort key
+                ],
+                AttributeDefinitions=[
+                    {'AttributeName': 'user_email', 'AttributeType': 'S'},
+                    {'AttributeName': 'property_id', 'AttributeType': 'S'},
+                ],
+                ProvisionedThroughput={'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5}
+            )
+            print(f"Table {FAVORITES_TABLE} created successfully")
+        except ClientError as e:
+            print(f"Error creating table {FAVORITES_TABLE}: {e}")
             
 # Function to get a table
 def get_table(table_name):

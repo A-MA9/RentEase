@@ -4,42 +4,48 @@ import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'profile_router.dart'; // Import the profile router
 import 'lib/favorites_screen.dart'; // Import the favorites screen
+import 'navigation_helper.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 2; // Home is selected
+  bool _isOwner = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _checkUserType();
+  }
+  
+  Future<void> _checkUserType() async {
+    final isOwner = await NavigationHelper.isUserOwner();
+    setState(() {
+      _isOwner = isOwner;
+    });
+  }
+  
+  void _onItemTapped(int index) async {
+    if (_selectedIndex == index) return; // Avoid reloading the same page
+    
+    setState(() {
+      _selectedIndex = index;
+    });
+    
+    await NavigationHelper.handleBottomNavigation(context, index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: 2, // Home is selected
-        onItemTapped: (index) {
-          if (index == 4) {
-            // Person icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ProfileRouter()),
-            );
-          } else if (index == 0) {
-            // Search icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
-            );
-          } else if (index == 1) {
-            // Favorites icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => FavoritesScreen()),
-            );
-          } else if (index == 3) {
-            // Chat icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ChatListScreen()),
-            );
-          }
-          // Handle other navigation as needed
-        },
+      bottomNavigationBar: SmartBottomNavBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+        isOwner: _isOwner,
       ),
       body: SafeArea(
         child: Column(

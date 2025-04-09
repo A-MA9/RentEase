@@ -1,8 +1,9 @@
-from .aws_config import get_table, USERS_TABLE, MESSAGES_TABLE, PROPERTIES_TABLE, BOOKINGS_TABLE, OTP_TABLE, create_tables_if_not_exist
+from .aws_config import get_table, USERS_TABLE, MESSAGES_TABLE, PROPERTIES_TABLE, BOOKINGS_TABLE, OTP_TABLE, FAVORITES_TABLE, create_tables_if_not_exist, dynamodb
 import uuid
 import time
 from datetime import datetime
 from botocore.exceptions import ClientError
+from boto3 import resource
 
 # Create tables on import if they don't exist
 create_tables_if_not_exist()
@@ -36,6 +37,10 @@ def get_otp_table():
     Returns the OTP table from DynamoDB
     """
     return get_table(OTP_TABLE)
+
+def get_favorites_table():
+    """Get the Favorites table from DynamoDB"""
+    return get_table(FAVORITES_TABLE)
 
 def generate_id():
     """

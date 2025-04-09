@@ -6,41 +6,35 @@ import 'chat_list.dart'; // Import the chat page
 import 'owner_houses.dart'; // Import the owner's buildings page
 import 'profile_router.dart'; // Import the profile router
 import 'home_screen_owner.dart';
+import 'navigation_helper.dart';
 
-class HomePageOwner extends StatelessWidget {
+class HomePageOwner extends StatefulWidget {
+  @override
+  _HomePageOwnerState createState() => _HomePageOwnerState();
+}
+
+class _HomePageOwnerState extends State<HomePageOwner> {
+  int _selectedIndex = 2; // Home is selected
+  bool _isOwner = true;
+  
+  void _onItemTapped(int index) async {
+    if (_selectedIndex == index) return; // Avoid reloading the same page
+    
+    setState(() {
+      _selectedIndex = index;
+    });
+    
+    await NavigationHelper.handleBottomNavigation(context, index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: 2, // Home is selected
-        onItemTapped: (index) {
-          if (index == 4) {
-            // Person icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ProfileRouter()),
-            );
-          } else if (index == 0) {
-            // Search icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreenOwner()),
-            );
-          } else if (index == 3) {
-            // Chat icon
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ChatListScreen()),
-            );
-          } else if (index == 1) {
-            // Owner's dormitories
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => OwnerHouses()),
-            );
-          }
-        },
+      bottomNavigationBar: SmartBottomNavBar(
+        selectedIndex: _selectedIndex, 
+        onItemTapped: _onItemTapped,
+        isOwner: _isOwner,
       ),
       body: SafeArea(
         child: Column(

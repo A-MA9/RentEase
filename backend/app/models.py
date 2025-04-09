@@ -105,7 +105,7 @@ class Booking(BaseModel):
     seeker_email: str
     owner_email: str
     check_in_date: date
-    total_amount: float
+    total_amount: str
 
 class BookingResponse(BaseModel):
     id: str
@@ -113,7 +113,7 @@ class BookingResponse(BaseModel):
     seeker_id: str
     start_date: date
     end_date: date
-    total_price: float
+    total_price: str
     status: str
     created_at: datetime
 
