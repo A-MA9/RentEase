@@ -1,5 +1,14 @@
 # Rentease 🏠📱
 
+
+## Badges
+
+![Flutter Version](https://img.shields.io/badge/Flutter-3.16.0-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-orange.svg)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
+![Database](https://img.shields.io/badge/Database-AWS%20DynamoDB-FF9900.svg)
+
 **Rentease** is a mobile app designed to simplify the search for rental properties like PGs, dorms, and houses. It connects seekers, owners, and even previous tenants in a smooth, interactive experience with modern UI, real-time chat, property listings, and smart search filters.
 
 ## 🚀 Features
