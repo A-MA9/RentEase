@@ -13,7 +13,8 @@ from .models import (
 from .database import (
     db_save_user, db_get_user_by_email, db_update_user,
     db_save_otp, db_verify_otp, generate_id, get_timestamp,
-    get_properties_table, get_users_table, get_messages_table
+    get_properties_table, get_users_table, get_messages_table,
+    get_bookings_table
 )
 from typing import List, Optional
 from fastapi.responses import JSONResponse
@@ -813,14 +814,13 @@ async def create_booking(booking: Booking):
             'seeker_id': seeker_id,
             'start_date': booking.check_in_date.isoformat(),
             'end_date': end_date.isoformat(),
-            'total_price': float(booking.total_amount),
+            'total_price': booking.total_amount,  # Use string directly for DynamoDB compatibility
             'status': 'completed',
             'created_at': get_timestamp()
         }
         
         # Get bookings table
-        dynamodb = boto3.resource('dynamodb')
-        bookings_table = dynamodb.Table('bookings')
+        bookings_table = get_bookings_table()
         
         # Save booking to DynamoDB
         bookings_table.put_item(Item=booking_data)
@@ -850,7 +850,7 @@ async def create_booking(booking: Booking):
             detail=f"Failed to create booking: {str(e)}"
         )
 
-def send_booking_confirmation_email(seeker_email: str, dormitory_name: str, check_in_date: date, total_amount: float):
+def send_booking_confirmation_email(seeker_email: str, dormitory_name: str, check_in_date: date, total_amount: str):
     try:
         msg = MIMEMultipart()
         msg['From'] = os.getenv("SMTP_USERNAME")
@@ -1176,6 +1176,54 @@ async def get_property_by_id(property_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get property: {str(e)}"
         )
+
+
+@app.get("/bookings/seekers/{property_id}", response_model=List[Dict[str, str]])
+async def get_seekers_for_property(property_id: str):
+    try:
+        bookings_table = get_bookings_table()
+        users_table = get_users_table()
+
+        # Step 1: Fetch all bookings with this property_id
+        response = bookings_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('property_id').eq(property_id)
+        )
+        bookings = response.get('Items', [])
+
+        if not bookings:
+            return []
+
+        seeker_info_list = []
+        seen_seeker_ids = set()
+
+        for booking in bookings:
+            seeker_id = booking.get('seeker_id')
+            if not seeker_id or seeker_id in seen_seeker_ids:
+                continue
+
+            # Fetch the user's details using seeker_id
+            user_response = users_table.scan(
+                FilterExpression=boto3.dynamodb.conditions.Attr('id').eq(seeker_id)
+            )
+            user_items = user_response.get('Items', [])
+            seeker_name = user_items[0].get('full_name') if user_items else "Unknown"
+
+            seeker_info_list.append({
+                "seeker_id": seeker_id,
+                "seeker_name": seeker_name
+            })
+            seen_seeker_ids.add(seeker_id)
+            print(seeker_info_list)
+
+        return seeker_info_list
+
+    except Exception as e:
+        print(f"Error fetching seekers for property {property_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve seekers: {str(e)}"
+        )
+
 
 if __name__ == '__main__':
     app.run(debug=True)

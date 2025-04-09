@@ -25,6 +25,8 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
   final storage = FlutterSecureStorage();
   bool _isCreatingBooking = false;
   String? _error;
+  int _retryCount = 0;
+  final int _maxRetries = 3;
 
   @override
   void initState() {
@@ -33,6 +35,14 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
   }
 
   Future<void> _createBooking() async {
+    if (_retryCount >= _maxRetries) {
+      setState(() {
+        _error = 'Maximum retry attempts reached. Please try again later or contact support.';
+        _isCreatingBooking = false;
+      });
+      return;
+    }
+
     try {
       setState(() {
         _isCreatingBooking = true;
@@ -59,6 +69,11 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
       print('  - Check-in Date: ${widget.checkInDate}');
       print('  - Total Amount: ${widget.totalAmount}');
 
+      if (widget.ownerEmail.isEmpty) {
+        print('❌ Owner email is empty! This will cause the booking to fail.');
+        throw Exception('Owner email is missing. Please try again or contact support.');
+      }
+
       await BookingService.createBooking(
         dormitoryName: widget.dormitoryName,
         seekerEmail: userEmail,
@@ -77,10 +92,25 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
       print('❌ Error creating booking: $e');
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = _getUserFriendlyErrorMessage(e.toString());
           _isCreatingBooking = false;
+          _retryCount++;
         });
       }
+    }
+  }
+
+  String _getUserFriendlyErrorMessage(String error) {
+    if (error.contains('timed out')) {
+      return 'Connection timed out. Please check your internet connection and try again.';
+    } else if (error.contains('Failed to create booking')) {
+      return 'Failed to create booking. Please try again later.';
+    } else if (error.contains('No authentication token found')) {
+      return 'You are not logged in. Please log in again.';
+    } else if (error.contains('User email not found')) {
+      return 'User information not found. Please log in again.';
+    } else {
+      return 'An error occurred: $error';
     }
   }
 
@@ -92,81 +122,115 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
+            if (_isCreatingBooking) ...[
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
               ),
-              child: Icon(
-                Icons.check_circle_outline,
-                size: 60,
-                color: Colors.green,
-              ),
-            ),
-            SizedBox(height: 24),
-            Text(
-              "Payment Successful!",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            SizedBox(height: 16),
-            if (_isCreatingBooking)
-              Column(
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    "Creating your booking...",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              )
-            else if (_error != null)
-              Column(
-                children: [
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.red,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _createBooking,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 40),
-                    ),
-                    child: Text(
-                      "Retry",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
-                  ),
-                ],
-              )
-            else
-              Text(
-                "Your booking has been confirmed",
+              const SizedBox(height: 20),
+              const Text(
+                'Creating your booking...',
                 style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            ] else if (_error != null) ...[
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48,
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (_retryCount < _maxRetries)
+                ElevatedButton(
+                  onPressed: _createBooking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                )
+              else
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    'Go to Home',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+            ] else ...[
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.green,
+                size: 48,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Payment Successful!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Your booking has been confirmed.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'Go to Home',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ],
         ),
       ),
