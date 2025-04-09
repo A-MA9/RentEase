@@ -1417,5 +1417,52 @@ async def check_favorite(
             detail=f"Failed to check favorite: {str(e)}"
         )
 
+@app.get("/bookings/seekers/{property_id}", response_model=List[Dict[str, str]])
+async def get_seekers_for_property(property_id: str):
+    try:
+        bookings_table = get_bookings_table()
+        users_table = get_users_table()
+
+        # Step 1: Fetch all bookings with this property_id
+        response = bookings_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('property_id').eq(property_id)
+        )
+        bookings = response.get('Items', [])
+
+        if not bookings:
+            return []
+
+        seeker_info_list = []
+        seen_seeker_ids = set()
+
+        for booking in bookings:
+            seeker_id = booking.get('seeker_id')
+            if not seeker_id or seeker_id in seen_seeker_ids:
+                continue
+
+            # Fetch the user's details using seeker_id
+            user_response = users_table.scan(
+                FilterExpression=boto3.dynamodb.conditions.Attr('id').eq(seeker_id)
+            )
+            user_items = user_response.get('Items', [])
+            seeker_name = user_items[0].get('full_name') if user_items else "Unknown"
+
+            seeker_info_list.append({
+                "seeker_id": seeker_id,
+                "seeker_name": seeker_name
+            })
+            seen_seeker_ids.add(seeker_id)
+            print(seeker_info_list)
+
+        return seeker_info_list
+
+    except Exception as e:
+        print(f"Error fetching seekers for property {property_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve seekers: {str(e)}"
+        )
+
+
 if __name__ == '__main__':
     app.run(debug=True)
