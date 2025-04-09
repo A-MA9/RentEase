@@ -9,6 +9,10 @@
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688.svg)
 ![Database](https://img.shields.io/badge/Database-AWS%20DynamoDB-FF9900.svg)
 
+## 📦 Download APK
+
+👉 [Download Rentease APK](https://drive.google.com/file/d/1qfVJGNrQm5P3yGrd835gByfp6BDbj1gp/view?usp=sharing)
+
 **Rentease** is a mobile app designed to simplify the search for rental properties like PGs, dorms, and houses. It connects seekers, owners, and even previous tenants in a smooth, interactive experience with modern UI, real-time chat, property listings, and smart search filters.
 
 ## 🚀 Features
@@ -39,6 +43,91 @@
   - `panorama_viewer` Flutter package for **3D panoramic room views**
 - **Authentication**: Secure user login and registration system
 
-## 📦 Download APK
 
-👉 [Download Rentease APK](https://drive.google.com/file/d/1qfVJGNrQm5P3yGrd835gByfp6BDbj1gp/view?usp=sharing)
+
+## Acknowledgements
+
+- [Flutter Team](https://flutter.dev)
+- [FastAPI](https://fastapi.tiangolo.com)
+- [AWS](https://aws.amazon.com)
+- [Open Source Community](https://opensource.org)
+- [Ngrok](https://ngrok.com)
+- [Material Design](https://material.io)
+- [Icons8](https://icons8.com)
+- [Stack Overflow](https://stackoverflow.com)
+- [GitHub](https://github.com)
+- [Awesome Readme Templates](https://awesomeopensource.com/project/elangosundar/awesome-README-templates)
+- [Awesome README](https://github.com/matiassingers/awesome-readme)
+- [How to write a Good README](https://bulldogjob.com/news/449-how-to-write-a-good-readme-for-your-github-project)
+
+## API Reference
+
+#### Get All Properties
+
+```http
+GET /api/properties
+```
+
+| Parameter  | Type     | Description                          |
+| :--------- | :------- | :----------------------------------- |
+| `api_key`  | `string` | **Required**. Your API key for authentication. |
+| `location` | `string` | **Optional**. Filter properties by location. |
+| `type`     | `string` | **Optional**. Filter properties by type (e.g., apartment, house). |
+
+#### Get Property Details
+
+```http
+GET /api/properties/${id}
+```
+
+| Parameter | Type     | Description                          |
+| :-------- | :------- | :----------------------------------- |
+| `id`      | `string` | **Required**. Id of the property to fetch details for. |
+
+#### Add Property
+
+```http
+POST /api/properties
+```
+
+| Parameter      | Type     | Description                          |
+| :------------- | :------- | :----------------------------------- |
+| `api_key`      | `string` | **Required**. Your API key for authentication. |
+| `title`        | `string` | **Required**. Title of the property. |
+| `description`  | `string` | **Required**. Description of the property. |
+| `price`        | `number` | **Required**. Price of the property. |
+| `location`     | `string` | **Required**. Location of the property. |
+| `images`       | `array`  | **Optional**. Array of image URLs for the property. |
+
+#### Update Property
+
+```http
+PUT /api/properties/${id}
+```
+
+| Parameter | Type     | Description                          |
+| :-------- | :------- | :----------------------------------- |
+| `id`      | `string` | **Required**. Id of the property to update. |
+| `api_key` | `string` | **Required**. Your API key for authentication. |
+| `title`    | `string` | **Optional**. Updated title of the property. |
+| `description` | `string` | **Optional**. Updated description of the property. |
+| `price`    | `number` | **Optional**. Updated price of the property. |
+| `location` | `string` | **Optional**. Updated location of the property. |
+
+#### Delete Property
+
+```http
+DELETE /api/properties/${id}
+```
+
+| Parameter | Type     | Description                          |
+| :-------- | :------- | :----------------------------------- |
+| `id`      | `string` | **Required**. Id of the property to delete. |
+| `api_key` | `string` | **Required**. Your API key for authentication. |
+
+## Authors
+
+- [@AnuragSuthar](https://github.com/AnuragSuthar)
+- [@A-MA9](https://github.com/A-MA9)
+- [@CodeGovindz](https://github.com/CodeGovindz)
+
