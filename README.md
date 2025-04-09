@@ -56,9 +56,6 @@
 - [Icons8](https://icons8.com)
 - [Stack Overflow](https://stackoverflow.com)
 - [GitHub](https://github.com)
-- [Awesome Readme Templates](https://awesomeopensource.com/project/elangosundar/awesome-README-templates)
-- [Awesome README](https://github.com/matiassingers/awesome-readme)
-- [How to write a Good README](https://bulldogjob.com/news/449-how-to-write-a-good-readme-for-your-github-project)
 
 ## API Reference
 
