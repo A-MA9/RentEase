@@ -32,4 +32,4 @@
 
 ## 📦 Download APK
 
-👉 [Download Rentease APK](<APK_DOWNLOAD_LINK>) *(replace this with your actual link)*
+👉 [Download Rentease APK](https://drive.google.com/file/d/1qfVJGNrQm5P3yGrd835gByfp6BDbj1gp/view?usp=sharing)
