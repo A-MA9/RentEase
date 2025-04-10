@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'chat_page.dart';
-import 'services/flutter_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
 class TenantsListPage extends StatefulWidget {
-  final String propertyId;
+  final dynamic propertyId;
 
-  const TenantsListPage({Key? key, required this.propertyId}) : super(key: key);
+  const TenantsListPage({super.key, required this.propertyId});
 
   @override
   _TenantsListPageState createState() => _TenantsListPageState();
@@ -17,28 +18,24 @@ class TenantsListPage extends StatefulWidget {
 class _TenantsListPageState extends State<TenantsListPage> {
   List<dynamic> tenants = [];
   bool isLoading = true;
-  String? token;
-
-  final baseUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
-
+  final storage = const FlutterSecureStorage();
+  
   @override
   void initState() {
     super.initState();
-    _loadTokenAndFetchTenants();
-  }
-
-  Future<void> _loadTokenAndFetchTenants() async {
-    final storedToken = await SecureStorage.storage.read(key: "access_token");
-    if (storedToken != null) {
-      setState(() => token = storedToken);
-      fetchTenants();
-    }
+    fetchTenants();
   }
 
   Future<void> fetchTenants() async {
     try {
+      final token = await storage.read(key: "access_token");
+      if (token == null) {
+        setState(() => isLoading = false);
+        return;
+      }
+      
       final response = await http.get(
-        Uri.parse('$baseUrl/bookings/seekers/${widget.propertyId}'),
+        Uri.parse('${baseUrl}/bookings/seekers/${widget.propertyId}'),
         headers: {"Authorization": "Bearer $token"},
       );
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'services/flutter_storage.dart';
 import 'chat_page.dart'; // Import the chat screen
+import 'constants.dart'; // Added import for constants
 
 class ChatListScreen extends StatefulWidget {
   @override
@@ -19,10 +20,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     fetchChats();
   }
 
-  final baseUrl =
-      kIsWeb
-          ? 'http://localhost:8000' // For web
-          : 'http://10.0.2.2:8000'; // For Android emulator
+  // Removed hardcoded baseUrl definition
+  // final baseUrl =
+  //     kIsWeb
+  //         ? 'http://localhost:8000' // For web
+  //         : 'http://10.0.2.2:8000'; // For Android emulator
 
   Future<void> fetchChats() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");
@@ -34,7 +36,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
     try {
       final response = await Dio().get(
-        '$baseUrl/chats', // ✅ Use proper URL for Android Emulator
+        '$baseUrl/chats', // Using baseUrl from constants.dart
         options: Options(headers: {"Authorization": "Bearer $savedToken"}),
       );
       setState(() {

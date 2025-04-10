@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/otp_service.dart';
 import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'constants.dart';
 
 class OwnerSignUpScreen extends StatefulWidget {
   const OwnerSignUpScreen({super.key});
@@ -64,11 +65,8 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         return;
       }
 
-      // Correct API URL for local development
-      final apiUrl =
-          kIsWeb
-              ? 'http://localhost:8000/register/owner' // For web
-              : 'http://10.0.2.2:8000/register/owner'; // For Android emulator
+      // Use constants for API URL
+      final apiUrl = '${baseUrl}/register/owner';
 
       final response = await http.post(
         Uri.parse(apiUrl),

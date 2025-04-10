@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'services/flutter_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverId; // ID of the user you are chatting with
@@ -20,7 +21,9 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   List<Map<String, dynamic>> messages = [];
-  TextEditingController messageController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+  bool isLoading = true;
   String? token;
   int retryCount = 0;
   static const maxRetries = 3;
@@ -28,16 +31,11 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    _loadToken(); // Fetch token when the page loads
+    _loadToken();
   }
 
-  final baseUrl =
-      kIsWeb
-          ? 'http://localhost:8000' // For web
-          : 'http://10.0.2.2:8000'; // For Android emulator
-
   Future<void> _loadToken() async {
-    String? savedToken = await SecureStorage.storage.read(key: "access_token");
+    String? savedToken = await storage.read(key: "access_token");
 
     if (savedToken != null) {
       setState(() {
@@ -123,7 +121,7 @@ class _ChatPageState extends State<ChatPage> {
       print("Send message response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        messageController.clear();
+        _messageController.clear();
         retryCount = 0; // Reset retry count before fetching messages
         await fetchMessages();
       } else {
@@ -138,7 +136,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Chat")),
+      appBar: AppBar(title: Text(widget.receiverName)),
       body: Column(
         children: [
           Expanded(
@@ -213,7 +211,7 @@ class _ChatPageState extends State<ChatPage> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: messageController,
+                    controller: _messageController,
                     decoration: InputDecoration(
                       hintText: "Type a message...",
                       border: OutlineInputBorder(
@@ -240,8 +238,8 @@ class _ChatPageState extends State<ChatPage> {
                   child: IconButton(
                     icon: Icon(Icons.send, color: Colors.white),
                     onPressed: () {
-                      if (messageController.text.isNotEmpty) {
-                        sendMessage(messageController.text);
+                      if (_messageController.text.isNotEmpty) {
+                        sendMessage(_messageController.text);
                       }
                     },
                   ),

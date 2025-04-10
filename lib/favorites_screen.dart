@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'room_details.dart';
 import 'login.dart';
+import 'constants.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({Key? key}) : super(key: key);
@@ -87,7 +88,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       }
 
       print('🔹 Token available, fetching favorites');
-      final url = Uri.parse('http://10.0.2.2:8000/favorites');
+      final url = Uri.parse('${baseUrl}/favorites');
       print('🔹 Making GET request to: $url');
       
       final response = await http.get(
@@ -133,6 +134,54 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         isLoading = false;
         favorites = [];
       });
+    }
+  }
+
+  Future<void> toggleFavorite(String propertyId) async {
+    try {
+      String? token = await storage.read(key: "access_token");
+      if (token == null) {
+        _showLoginPrompt(context);
+        return;
+      }
+
+      setState(() {
+        isLoading = true;
+      });
+
+      final url = Uri.parse('${baseUrl}/favorites/toggle');
+      final Map<String, dynamic> requestData = {
+        'property_id': propertyId
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(requestData),
+      );
+
+      if (response.statusCode == 200) {
+        fetchFavorites();
+      } else {
+        print('❌ Failed to toggle favorite: ${response.statusCode} - ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to toggle favorite. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error toggling favorite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Network error. Please check your connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -214,27 +263,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         ).then((_) => fetchFavorites());
                       },
                       onRemove: () async {
-                        try {
-                          String? token = await storage.read(key: "access_token");
-                          if (token == null) return;
-
-                          final url = Uri.parse('http://10.0.2.2:8000/favorites/toggle');
-                          await http.post(
-                            url,
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': 'Bearer $token',
-                            },
-                            body: json.encode({
-                              'property_id': property['id'].toString()
-                            }),
-                          );
-
-                          // Refresh favorites after removing
-                          fetchFavorites();
-                        } catch (e) {
-                          print('Error removing favorite: $e');
-                        }
+                        await toggleFavorite(property['id'].toString());
                       },
                     );
                   },

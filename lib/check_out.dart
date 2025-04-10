@@ -4,6 +4,7 @@ import 'payment_page.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'constants.dart';
 
 class CheckoutPage extends StatefulWidget {
   final DateTime selectedDate;
@@ -74,7 +75,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     
     try {
       final url = Uri.parse(
-        'http://10.0.2.2:8000/get_property/${widget.propertyId}',
+        '${baseUrl}/get_property/${widget.propertyId}',
       );
       print('Fetching property details to get owner email: $url');
       

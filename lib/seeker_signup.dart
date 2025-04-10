@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/otp_service.dart';
 import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'constants.dart';
 
 class SeekerSignUpScreen extends StatefulWidget {
   const SeekerSignUpScreen({super.key});
@@ -60,10 +61,8 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
         return;
       }
 
-      // Use the correct URL for web
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/register/seeker' // For web
-          : 'http://10.0.2.2:8000/register/seeker'; // For Android emulator
+      // Use constants for API URL
+      final apiUrl = '${baseUrl}/register/seeker';
 
       final response = await http.post(
         Uri.parse(apiUrl),

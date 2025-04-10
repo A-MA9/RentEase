@@ -51,6 +51,11 @@ app.add_middleware(
     max_age=3600,  # Cache preflight requests for 1 hour
 )
 
+# Root route
+@app.get("/")
+async def root():
+    return {"message": "Welcome to RentEase API", "status": "online"}
+
 # OAuth2 scheme for token handling
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 

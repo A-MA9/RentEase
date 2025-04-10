@@ -1,14 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 
-String get baseUrl {
-  if (kIsWeb) {
-    return "http://localhost:8000";
-  } else if (Platform.isAndroid) {
-    return "http://10.0.2.2:8000";
-  } else {
-    return "http://localhost:8000";
-  }
-}
+// Simplified to a constant since we're using the same URL for all platforms
+const String baseUrl = "https://b82a-49-249-159-114.ngrok-free.app";
 
-const String otpUrl = "http://65.0.71.28:3000";
+// OTP URL is the same as base URL
+const String otpUrl = "https://b82a-49-249-159-114.ngrok-free.app";

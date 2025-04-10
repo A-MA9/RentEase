@@ -7,6 +7,7 @@ import 'services/flutter_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'constants.dart';
 
 class Verification2Screen extends StatefulWidget {
   final int userType;
@@ -103,10 +104,8 @@ class _Verification2ScreenState extends State<Verification2Screen> {
     try {
       final userType = widget.userType == 1 ? 'owner' : 'seeker';
       
-      // API URL based on platform
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/verify/$userType' // For web
-          : 'http://10.0.2.2:8000/verify/$userType'; // For Android emulator
+      // API URL using constants
+      final apiUrl = '${baseUrl}/verify/$userType';
       
       // Get token if available
       final token = await SecureStorage.storage.read(key: 'access_token');

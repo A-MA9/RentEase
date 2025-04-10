@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'login.dart';
 import 'services/otp_service.dart';
+import 'constants.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -39,9 +40,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/request-password-reset'
-          : 'http://10.0.2.2:8000/request-password-reset';
+      final apiUrl = '${baseUrl}/request-password-reset';
 
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -105,9 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final apiUrl = kIsWeb
-          ? 'http://localhost:8000/reset-password'
-          : 'http://10.0.2.2:8000/reset-password';
+      final apiUrl = '${baseUrl}/reset-password';
 
       final response = await http.post(
         Uri.parse(apiUrl),

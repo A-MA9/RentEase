@@ -9,6 +9,7 @@ import 'check_in.dart';
 import 'chat_owner.dart';
 import 'login.dart';
 import 'tenants_list.dart';
+import 'constants.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final dynamic propertyId;
@@ -101,7 +102,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       print('🔹 Attempting to toggle favorite for property: ${widget.propertyId}');
       print('🔹 User token available: ${token.isNotEmpty}');
       
-      final url = Uri.parse('http://10.0.2.2:8000/favorites/toggle');
+      final url = Uri.parse('${baseUrl}/favorites/toggle');
       final Map<String, dynamic> requestData = {
         'property_id': widget.propertyId.toString()
       };
@@ -181,7 +182,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     }
 
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/check_favorite/${widget.propertyId}');
+      final url = Uri.parse('${baseUrl}/check_favorite/${widget.propertyId}');
       final response = await http.get(
         url,
         headers: {
@@ -240,7 +241,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Future<void> fetchPropertyDetails() async {
     try {
       final url = Uri.parse(
-        'http://10.0.2.2:8000/get_property/${widget.propertyId}',
+        '${baseUrl}/get_property/${widget.propertyId}',
       );
       print('Fetching property details from: $url');
 
@@ -295,7 +296,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   Future<String?> fetchOwnerEmail(String ownerId) async {
     try {
       // Endpoint to fetch user details by ID
-      final url = Uri.parse('http://10.0.2.2:8000/get_user_email/$ownerId');
+      final url = Uri.parse('${baseUrl}/get_user_email/$ownerId');
       print('Fetching owner email from: $url');
       
       final response = await http.get(url);

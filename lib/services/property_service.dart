@@ -3,18 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/property_model.dart';
+import '../constants.dart';
 
 class PropertyService {
   static const storage = FlutterSecureStorage();
   
-  // Get the API base URL based on platform
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    }
-    return 'http://10.0.2.2:8000';
-  }
-
   // Create a new property
   static Future<Map<String, dynamic>> createProperty({
     required String title,
@@ -42,7 +35,7 @@ class PropertyService {
       print('🔹 User ID: $userId'); // Debug log
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/properties/'),
+        Uri.parse('${baseUrl}/properties/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -98,7 +91,7 @@ class PropertyService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/properties?owner_id=$userId'),
+        Uri.parse('${baseUrl}/properties?owner_id=$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -121,7 +114,7 @@ class PropertyService {
   static Future<List<Property>> getNearbyProperties() async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/properties/nearby'),
+        Uri.parse('${baseUrl}/properties/nearby'),
         headers: {
           'Content-Type': 'application/json',
         },

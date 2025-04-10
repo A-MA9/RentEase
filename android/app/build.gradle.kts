@@ -1,3 +1,11 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -19,29 +27,34 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.flutter_app_2"
+        applicationId = "com.example.RentEase"
         minSdk = 21
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
     buildTypes {
         release {
-            // isMinifyEnabled = false
-            // proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-
-            // // Ensure debug signing exists before using it
-            // signingConfig = signingConfigs.findByName("debug") ?: signingConfigs.getByName("release")
-            isMinifyEnabled = true // Enable code shrinking
-            isShrinkResources = true // Enable resource shrinking
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
+
 
 flutter {
     source = "../.."

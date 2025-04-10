@@ -57,6 +57,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadMessages() async {
+    setState(() {
+      isLoading = true;
+    });
+    
     try {
       final senderId = await storage.read(key: "user_id");
       if (senderId == null) {
@@ -65,7 +69,7 @@ class _ChatPageState extends State<ChatPage> {
       }
 
       final url = Uri.parse(
-        'http://10.0.2.2:8000/messages/${widget.receiverId}',
+        '${baseUrl}/messages/${widget.receiverId}',
       );
       print('Loading messages from: $url');
       
@@ -103,12 +107,33 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
-    try {
-      final senderId = await storage.read(key: "user_id");
-      final token = await storage.read(key: "access_token");
-      if (senderId == null || token == null) return;
+    String? token = await storage.read(key: 'access_token');
+    String? senderId = await storage.read(key: 'user_id');
+    if (token == null || senderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need to be logged in to send messages'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-      final url = Uri.parse('http://10.0.2.2:8000/messages/send');
+    final messageText = _messageController.text.trim();
+    _messageController.clear();
+
+    setState(() {
+      _messages.add({
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'sender_id': senderId,
+        'receiver_id': widget.receiverId,
+        'content': messageText,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    });
+
+    try {
+      final url = Uri.parse('${baseUrl}/messages/send');
       print('Sending message to: $url');
       
       final response = await http.post(
@@ -119,13 +144,12 @@ class _ChatPageState extends State<ChatPage> {
         },
         body: json.encode({
           'receiver_id': widget.receiverId,
-          'message': _messageController.text.trim(),
+          'message': messageText,
           'message_type': 'text',
         }),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _messageController.clear();
         _loadMessages();
       } else {
         print('Failed to send message: ${response.statusCode} - ${response.body}');

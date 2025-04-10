@@ -15,6 +15,7 @@ import 'room_details.dart'; // Import the RoomDetailsPage
 import 'services/flutter_storage.dart';
 import 'owner_houses.dart';
 import 'navigation_helper.dart';
+import 'constants.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,13 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   // Removed _debounce and _isSearching
-
-  String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
-    }
-    return 'http://10.0.2.2:8000'; // Ensure correct IP
-  }
 
   @override
   void initState() {
@@ -131,8 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final response = await http
           .get(
             Uri.parse(
-              '${_baseUrl}/properties/nearby',
-            ), // Assuming this endpoint exists
+              '${baseUrl}/properties/nearby',
+            ), // Using baseUrl from constants.dart
             headers: {
               'Accept': 'application/json',
               // Add Auth header if needed

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'room_details.dart';
+import 'constants.dart';
 
 class SearchPage extends StatefulWidget {
   final String? initialQuery;
@@ -19,10 +20,6 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _currentQuery = '';
   Timer? _debounce;
-
-  String get _baseUrl {
-    return kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000';
-  }
 
   @override
   void initState() {
@@ -64,7 +61,7 @@ class _SearchPageState extends State<SearchPage> {
     if (query.isEmpty) return [];
 
     final searchUrl = Uri.parse(
-      '$_baseUrl/properties/search',
+      '${baseUrl}/properties/search',
     ).replace(queryParameters: {'location': query});
 
     print('SearchPage fetching from: $searchUrl');

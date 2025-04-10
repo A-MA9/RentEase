@@ -9,6 +9,7 @@ import 'services/flutter_storage.dart';
 import 'home_page_owner.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'forgot_password.dart';
+import 'constants.dart';
 
 // Secure storage for JWT token
 final storage = FlutterSecureStorage();
@@ -42,94 +43,102 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final apiUrl =
-        kIsWeb ? 'http://localhost:8000/login' : 'http://10.0.2.2:8000/login';
+    try {
+      final apiUrl = '${baseUrl}/login';
+      
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: {'username': email, 'password': password},
+      );
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body: {'username': email, 'password': password},
-    );
+      setState(() {
+        _isLoading = false;
+      });
 
-    setState(() {
-      _isLoading = false;
-    });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String token = data['access_token'];
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      String token = data['access_token'];
+        // ✅ Store the token
+        await SecureStorage.storage.write(key: 'access_token', value: token);
+        print("🔹 Token Stored: $token");
 
-      // ✅ Store the token
-      await SecureStorage.storage.write(key: 'access_token', value: token);
-      print("🔹 Token Stored: $token");
+        // ✅ Store the email
+        await SecureStorage.storage.write(key: 'email', value: email);
+        print("🔹 Email Stored: $email");
 
-      // ✅ Store the email
-      await SecureStorage.storage.write(key: 'email', value: email);
-      print("🔹 Email Stored: $email");
+        // ✅ Decode the token to extract `user_type`
+        try {
+          final jwt = JWT.decode(token);
+          String? userType = jwt.payload['user_type'];
+          String? userId = jwt.payload['user_id'];
+          String? userEmail = jwt.payload['email'];
 
-      // ✅ Decode the token to extract `user_type`
-      try {
-        final jwt = JWT.decode(token);
-        String? userType = jwt.payload['user_type'];
-        String? userId = jwt.payload['user_id'];
-        String? userEmail = jwt.payload['email'];
-
-        if (userType != null && userId != null) {
-          await SecureStorage.storage.write(key: 'user_type', value: userType);
-          await SecureStorage.storage.write(key: 'user_id', value: userId);
-          await SecureStorage.storage.write(key: 'user_email', value: userEmail ?? email);
-          
-          print("User Type: $userType");
-          print("User ID: $userId");
-          
-          // Fetch user profile data
-          try {
-            final userProfileUrl = kIsWeb ? 'http://localhost:8000/users/profile' : 'http://10.0.2.2:8000/users/profile';
-            final profileResponse = await http.get(
-              Uri.parse(userProfileUrl),
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer $token"
-              },
-            );
+          if (userType != null && userId != null) {
+            await SecureStorage.storage.write(key: 'user_type', value: userType);
+            await SecureStorage.storage.write(key: 'user_id', value: userId);
+            await SecureStorage.storage.write(key: 'user_email', value: userEmail ?? email);
             
-            if (profileResponse.statusCode == 200) {
-              final profileData = jsonDecode(profileResponse.body);
-              
-              // Store user profile data in secure storage
-              await SecureStorage.storage.write(key: 'user_name', value: profileData['full_name']);
-              await SecureStorage.storage.write(key: 'user_phone', value: profileData['phone_number']);
-              
-              print("User profile data stored: ${profileData['full_name']}");
-            } else {
-              print("❌ Failed to fetch user profile: ${profileResponse.statusCode}");
-            }
-          } catch (e) {
-            print("❌ Error fetching user profile: $e");
-          }
+            print("User Type: $userType");
+            print("User ID: $userId");
+            
+            // Fetch user profile data
+            await _fetchUserProfile(token);
 
-          // ✅ Navigate based on user type
-          if (userType == 'owner') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomePageOwner()),
-            );
+            // ✅ Navigate based on user type
+            if (userType == 'owner') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePageOwner()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
           } else {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );
+            print("❌ Failed to decode user_type or user_id");
+            _showErrorDialog("Failed to retrieve user information.");
           }
-        } else {
-          print("❌ Failed to decode user_type or user_id");
-          _showErrorDialog("Failed to retrieve user information.");
+        } catch (e) {
+          print("❌ JWT Decode Error: $e");
+          _showErrorDialog("Invalid token received.");
         }
-      } catch (e) {
-        print("❌ JWT Decode Error: $e");
-        _showErrorDialog("Invalid token received.");
+      } else {
+        _showErrorDialog("Invalid email or password.");
       }
-    } else {
-      _showErrorDialog("Invalid email or password.");
+    } catch (e) {
+      print("❌ Login Error: $e");
+      _showErrorDialog("An error occurred. Please try again later.");
+    }
+  }
+
+  Future<void> _fetchUserProfile(String token) async {
+    try {
+      final userProfileUrl = '${baseUrl}/users/profile';
+      final profileResponse = await http.get(
+        Uri.parse(userProfileUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+      );
+      
+      if (profileResponse.statusCode == 200) {
+        final profileData = jsonDecode(profileResponse.body);
+        
+        // Store user profile data in secure storage
+        await SecureStorage.storage.write(key: 'user_name', value: profileData['full_name']);
+        await SecureStorage.storage.write(key: 'user_phone', value: profileData['phone_number']);
+        
+        print("User profile data stored: ${profileData['full_name']}");
+      } else {
+        print("❌ Failed to fetch user profile: ${profileResponse.statusCode}");
+      }
+    } catch (e) {
+      print("❌ Error fetching user profile: $e");
     }
   }
 

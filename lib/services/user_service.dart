@@ -2,17 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants.dart';
 
 class UserService {
   static const storage = FlutterSecureStorage();
-  
-  // Get the API base URL based on platform
-  static String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    }
-    return 'http://10.0.2.2:8000';
-  }
   
   // Get user profile
   static Future<Map<String, dynamic>> getUserProfile() async {
@@ -24,7 +17,7 @@ class UserService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/users/profile'),
+        Uri.parse('${baseUrl}/users/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -59,7 +52,7 @@ class UserService {
       if (phoneNumber != null) updateData['phone_number'] = phoneNumber;
 
       final response = await http.put(
-        Uri.parse('$_baseUrl/users/profile'),
+        Uri.parse('${baseUrl}/users/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

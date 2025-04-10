@@ -4,6 +4,7 @@ import 'check_out.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'constants.dart';
 
 class CheckInDatePage extends StatefulWidget {
   final String dormitoryName;
@@ -44,7 +45,7 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
         return;
       }
 
-      final url = Uri.parse('http://10.0.2.2:8000/bookings/');
+      final url = Uri.parse('${baseUrl}/bookings/');
       print('Creating booking with data: ${json.encode({
         'user_id': userId,
         'property_id': widget.propertyId,
