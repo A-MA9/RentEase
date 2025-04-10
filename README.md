@@ -11,7 +11,7 @@
 
 ## 📦 Download APK
 
-[![Download Rentease APK](https://www.playit.app/public/img/download_apk.fb5c471b.png)](https://drive.google.com/file/d/1qfVJGNrQm5P3yGrd835gByfp6BDbj1gp/view?usp=sharing)
+[![Download Rentease APK](https://www.playit.app/public/img/download_apk.fb5c471b.png)](https://drive.google.com/file/d/15AFkH3d_706ENZ8uyrqijTu0fdIGO-VX/view?usp=sharing)
 
 **Rentease** is a mobile app designed to simplify the search for rental properties like PGs, dorms, and houses. It connects seekers, owners, and even previous tenants in a smooth, interactive experience with modern UI, real-time chat, property listings, and smart search filters.
 
