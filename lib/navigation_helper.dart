@@ -9,6 +9,7 @@ import 'chat_list.dart';
 import 'favorites_screen.dart';
 import 'owner_houses.dart';
 import 'search_page.dart';
+import 'transitions.dart';
 
 class NavigationHelper {
   static Future<bool> isUserOwner() async {
@@ -16,43 +17,40 @@ class NavigationHelper {
     return userType == 'owner';
   }
 
-  static Future<void> navigateToHomeBasedOnUserType(BuildContext context) async {
+  static Future<void> navigateToHomeBasedOnUserType(
+    BuildContext context,
+  ) async {
     final isOwner = await isUserOwner();
     if (isOwner) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePageOwner()),
-      );
+      Navigator.push(context, SharedAxisTransition(page: HomePageOwner()));
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      Navigator.push(context, SharedAxisTransition(page: HomePage()));
     }
   }
 
-  static Future<void> handleBottomNavigation(BuildContext context, int index, {String? searchQuery}) async {
+  static Future<void> handleBottomNavigation(
+    BuildContext context,
+    int index, {
+    String? searchQuery,
+  }) async {
     final isOwner = await isUserOwner();
-    
+
     switch (index) {
       case 0: // Search
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => SearchPage(initialQuery: searchQuery ?? ''),
+          SharedAxisTransition(
+            page: SearchPage(initialQuery: searchQuery ?? ''),
           ),
         );
         break;
       case 1: // Favorites or My Properties
         if (isOwner) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => OwnerHouses()),
-          );
+          Navigator.push(context, SharedAxisTransition(page: OwnerHouses()));
         } else {
-          Navigator.pushReplacement(
+          Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => FavoritesScreen()),
+            SharedAxisTransition(page: FavoritesScreen()),
           );
         }
         break;
@@ -60,16 +58,10 @@ class NavigationHelper {
         await navigateToHomeBasedOnUserType(context);
         break;
       case 3: // Messages
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ChatListScreen()),
-        );
+        Navigator.push(context, SharedAxisTransition(page: ChatListScreen()));
         break;
       case 4: // Profile
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ProfileRouter()),
-        );
+        Navigator.push(context, SharedAxisTransition(page: ProfileRouter()));
         break;
     }
   }
@@ -116,9 +108,14 @@ class SmartBottomNavBar extends StatelessWidget {
               label: "Search",
             ),
             BottomNavigationBarItem(
-              icon: isOwner 
-                ? Image.asset('assets/building_brown.png', width: 24, height: 24)
-                : Icon(Icons.favorite_border),
+              icon:
+                  isOwner
+                      ? Image.asset(
+                        'assets/building_brown.png',
+                        width: 24,
+                        height: 24,
+                      )
+                      : Icon(Icons.favorite_border),
               label: isOwner ? "My Properties" : "Favorites",
             ),
             const BottomNavigationBarItem(
@@ -145,4 +142,4 @@ class SmartBottomNavBar extends StatelessWidget {
       ),
     );
   }
-} 
+}

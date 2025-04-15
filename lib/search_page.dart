@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'room_details.dart';
 import 'constants.dart';
+import 'filter_search.dart';
+import 'transitions.dart';
 
 class SearchPage extends StatefulWidget {
   final String? initialQuery;
@@ -20,6 +22,7 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   String _currentQuery = '';
   Timer? _debounce;
+  List<dynamic> _filteredResults = [];
 
   @override
   void initState() {
@@ -87,6 +90,12 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  void _handleFilterResults(List<dynamic> filteredResults) {
+    setState(() {
+      _filteredResults = filteredResults;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,10 +141,23 @@ class _SearchPageState extends State<SearchPage> {
                   _buildFilterButton(
                     "Filter",
                     icon: Icons.filter_list,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Filter Tapped!")),
+                    onTap: () async {
+                      final results = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FilterPage(
+                            currentLocation: _currentQuery,
+                            onFiltersApplied: (filters) {
+                              // Handle filter parameters if needed
+                              print('Applied filters: $filters');
+                            },
+                          ),
+                        ),
                       );
+                      
+                      if (results != null) {
+                        _handleFilterResults(results);
+                      }
                     },
                   ),
                   _buildFilterButton("Special Promo", icon: Icons.local_offer),
@@ -145,104 +167,149 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: FutureBuilder<List<dynamic>>(
-                future: _searchResultsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-                      ),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.orange,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Error: ${snapshot.error}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.red[700]),
-                          ),
-                          const SizedBox(height: 15),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.refresh),
-                            label: const Text("Retry"),
-                            onPressed: () => _triggerSearch(_currentQuery),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.brown,
+              child: _filteredResults.isNotEmpty
+                  ? _buildFilteredResults()
+                  : FutureBuilder<List<dynamic>>(
+                      future: _searchResultsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+                          );
+                        }
 
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                      child: Text(
-                        _currentQuery.isEmpty
-                            ? 'Enter a location to search'
-                            : 'No properties found for "$_currentQuery".',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                    );
-                  }
-
-                  final results = snapshot.data!;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Found ${results.length} Rentals for "$_currentQuery"',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: results.length,
-                          itemBuilder: (context, index) {
-                            final property = results[index];
-                            return GestureDetector(
-                              onTap: () {
-                                print('Tapped on search result: ${property['id']}');
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => RoomDetailsPage(
-                                      propertyId: property['id'],
-                                    ),
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.orange,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Error: ${snapshot.error}',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.red[700]),
+                                ),
+                                const SizedBox(height: 15),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text("Retry"),
+                                  onPressed: () => _triggerSearch(_currentQuery),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.brown,
                                   ),
-                                );
-                              },
-                              child: PropertyCard(
-                                property: Map<String, dynamic>.from(property),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(
+                            child: Text(
+                              _currentQuery.isEmpty
+                                  ? 'Enter a location to search'
+                                  : 'No properties found for "$_currentQuery".',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                            ),
+                          );
+                        }
+
+                        final results = snapshot.data!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Found ${results.length} Rentals for "$_currentQuery"',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: results.length,
+                                itemBuilder: (context, index) {
+                                  final property = results[index];
+                                  return GestureDetector(
+                                    onTap: () {
+                                      print(
+                                        'Tapped on search result: ${property['id']}',
+                                      );
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => RoomDetailsPage(
+                                            propertyId: property['id'],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: PropertyCard(
+                                      property: Map<String, dynamic>.from(property),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFilteredResults() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Found ${_filteredResults.length} Filtered Rentals for "$_currentQuery"',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _filteredResults.length,
+            itemBuilder: (context, index) {
+              final property = _filteredResults[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RoomDetailsPage(
+                        propertyId: property['id'],
+                      ),
+                    ),
+                  );
+                },
+                child: PropertyCard(
+                  property: Map<String, dynamic>.from(property),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -311,9 +378,7 @@ class PropertyCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RoomDetailsPage(
-                propertyId: property['id'],
-              ),
+              builder: (context) => RoomDetailsPage(propertyId: property['id']),
             ),
           );
         },

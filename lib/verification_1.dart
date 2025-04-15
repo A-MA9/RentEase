@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'verification_2.dart';
 import 'services/otp_service.dart';
+import 'transitions.dart';
 
 class VerificationScreen extends StatefulWidget {
   final int userType;
@@ -135,8 +136,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => Verification2Screen(
+                    SharedAxisTransition(
+                      page: Verification2Screen(
                         userType: widget.userType,
                         email: widget.email,
                       ),

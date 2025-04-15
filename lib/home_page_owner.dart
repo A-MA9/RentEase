@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app_2/home_screen_owner.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
+import 'lib/NoLoginProfile)dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'owner_houses.dart'; // Import the owner's buildings page
 import 'profile_router.dart'; // Import the profile router
@@ -16,14 +16,14 @@ class HomePageOwner extends StatefulWidget {
 class _HomePageOwnerState extends State<HomePageOwner> {
   int _selectedIndex = 2; // Home is selected
   bool _isOwner = true;
-  
+
   void _onItemTapped(int index) async {
     if (_selectedIndex == index) return; // Avoid reloading the same page
-    
+
     setState(() {
       _selectedIndex = index;
     });
-    
+
     await NavigationHelper.handleBottomNavigation(context, index);
   }
 
@@ -32,7 +32,7 @@ class _HomePageOwnerState extends State<HomePageOwner> {
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: SmartBottomNavBar(
-        selectedIndex: _selectedIndex, 
+        selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
         isOwner: _isOwner,
       ),

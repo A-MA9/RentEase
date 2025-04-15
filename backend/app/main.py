@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, Security, Body
+from fastapi import FastAPI, HTTPException, Depends, status, Security,Query,Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -1467,6 +1467,325 @@ async def get_seekers_for_property(property_id: str):
             status_code=500,
             detail=f"Failed to retrieve seekers: {str(e)}"
         )
+
+class PropertyFilter(BaseModel):
+    dormitory_type: Optional[str] = None
+    min_stay_months: Optional[int] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    facilities: Optional[List[str]] = None
+    location: Optional[str] = None
+
+@app.post("/properties/filter", response_model=List[PropertyResponse])
+async def filter_properties(filter_data: PropertyFilter):
+    try:
+        print("🔍 Starting filter operation...")
+        properties_table = get_properties_table()
+        print("✅ Got properties table")
+
+        filter_expression = Attr('is_available').eq(True)
+
+        if filter_data.dormitory_type:
+            print(f"🧠 Filtering by dormitory_type (gender): {filter_data.dormitory_type}")
+            filter_expression = filter_expression & Attr('gender').eq(filter_data.dormitory_type)
+
+        if filter_data.min_stay_months is not None:
+            print(f"🕒 Filtering by min_stay_months <= {filter_data.min_stay_months}")
+            filter_expression = filter_expression & Attr('min_stay_months').lte(filter_data.min_stay_months)
+
+        if filter_data.min_price is not None:
+            print(f"💰 Filtering by price >= {filter_data.min_price}")
+            filter_expression = filter_expression & Attr('price_per_month').gte(Decimal(str(filter_data.min_price)))
+        if filter_data.max_price is not None:
+            print(f"💰 Filtering by price <= {filter_data.max_price}")
+            filter_expression = filter_expression & Attr('price_per_month').lte(Decimal(str(filter_data.max_price)))
+
+        # Optional: Location filter
+        if filter_data.location:
+            print(f"📍 Filtering by location: {filter_data.location}")
+            filter_expression = filter_expression & Attr('location').contains(filter_data.location)
+
+        # Facilities mapping
+        facility_key_map = {
+            "tv": "tv",
+            "fan": "fan",
+            "ac": "ac",
+            "chair": "chair",
+            "ventilation": "ventilation",
+            "ups": "ups",
+            "sofa": "sofa",
+            "lamp": "lamp",
+            "bath tub": "bath"
+        }
+
+        if filter_data.facilities:
+            print(f"🛋️ Filtering by facilities: {filter_data.facilities}")
+            for facility in filter_data.facilities:
+                key = facility_key_map.get(facility.lower())
+                if key:
+                    filter_expression = filter_expression & Attr(key).eq(True)
+                else:
+                    print(f"⚠️ Unknown facility: {facility}")
+
+        print("🔄 Scanning table with final filter expression...")
+        response = properties_table.scan(FilterExpression=filter_expression)
+        filtered_items = response.get('Items', [])
+
+        while 'LastEvaluatedKey' in response:
+            print("📦 Fetching more items from scan (pagination)...")
+            response = properties_table.scan(
+                FilterExpression=filter_expression,
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
+            filtered_items.extend(response.get('Items', []))
+
+        print(f"✅ Total properties fetched: {len(filtered_items)}")
+
+        properties = []
+        for item in filtered_items:
+            try:
+                # Convert Decimals
+                if 'price_per_month' in item:
+                    item['price_per_month'] = float(item['price_per_month'])
+                if 'size_sqft' in item and item['size_sqft'] is not None:
+                    item['size_sqft'] = float(item['size_sqft'])
+                if 'min_stay_months' in item and isinstance(item['min_stay_months'], Decimal):
+                    item['min_stay_months'] = int(item['min_stay_months'])
+                if 'bath' in item and isinstance(item['bath'], Decimal):
+                    item['bath'] = int(item['bath'])
+                if 'rooms_available' in item and isinstance(item['rooms_available'], Decimal):
+                    item['rooms_available'] = int(item['rooms_available'])
+
+                property_response = PropertyResponse(
+                    id=item['id'],
+                    owner_id=item['owner_id'],
+                    title=item['title'],
+                    property_type=item['property_type'],
+                    description=item.get('description', ''),
+                    location=item['location'],
+                    price_per_month=item['price_per_month'],
+                    min_stay_months=item['min_stay_months'],
+                    image_urls=item.get('image_urls', []),
+                    panoramic_urls=item.get('panoramic_urls', []),
+                    gender=item.get('gender', 'Both'),
+                    rooms_available=item.get('rooms_available', 1),
+                    size_sqft=item.get('size_sqft'),
+                    tv=item.get('tv', False),
+                    fan=item.get('fan', False),
+                    ac=item.get('ac', False),
+                    chair=item.get('chair', False),
+                    ventilation=item.get('ventilation', False),
+                    ups=item.get('ups', False),
+                    sofa=item.get('sofa', False),
+                    lamp=item.get('lamp', False),
+                    bath=item.get('bath', 1),
+                    is_available=item.get('is_available', True),
+                    created_at=item.get('created_at', get_timestamp()),
+                    owner_name=item.get('owner_name', 'Unknown')
+                )
+                properties.append(property_response)
+
+            except Exception as e:
+                print(f"❌ Error processing property {item.get('id', 'unknown')}: {e}")
+                continue
+
+        print(f"✅ Returning {len(properties)} filtered properties")
+        return properties
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"🔥 Server error while filtering properties: {str(e)}")
+
+    
+
+
+@app.get("/bookings/display")
+async def display_owner_bookings(current_user: UserBase = Depends(get_current_user)):
+    try:
+        properties_table = get_properties_table()
+        bookings_table = get_bookings_table()
+        users_table = get_users_table()
+
+        prop_response = properties_table.scan(
+            FilterExpression=Attr('owner_id').eq(current_user.id)
+        )
+        properties = prop_response.get('Items', [])
+        property_map = {prop['id']: prop for prop in properties}
+        property_ids = list(property_map.keys())
+
+        result = []
+
+        for prop_id in property_ids:
+            booking_response = bookings_table.scan(
+                FilterExpression=Attr('property_id').eq(prop_id)
+            )
+            bookings = booking_response.get('Items', [])
+
+            for b in bookings:
+                try:
+                    if b.get("status") != "completed":
+                        continue
+
+                    seeker_id = b.get("seeker_id")
+                    owner_id = current_user.id
+
+                    seeker_name = "Unknown"
+                    owner_name = current_user.full_name  # already known
+
+                    # Lookup seeker name using SCAN (since 'email' is the only key)
+                    seeker_resp = users_table.scan(
+                        FilterExpression=Attr('id').eq(seeker_id)
+                    )
+                    seeker_items = seeker_resp.get("Items", [])
+                    if seeker_items:
+                        seeker_name = seeker_items[0].get("full_name", "Unknown")
+
+                    result.append({
+                        "booking": b,
+                        "property": property_map[prop_id],
+                        "seeker_name": seeker_name,
+                        "owner_name": owner_name
+                    })
+
+                except Exception as e:
+                    print(f"❌ Error handling booking: {e}")
+                    continue
+
+        return result
+
+    except Exception as e:
+        print(f"🔥 /bookings/display error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch booking data.")
+
+
+    except Exception as e:
+        print(f"🔥 /bookings/display error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch booking data.")
+
+
+@app.get("/bookings/display/seeker")
+async def display_seeker_bookings(current_user: UserBase = Depends(get_current_user)):
+    try:
+        # Ensure the current user is a seeker
+        seeker_id = current_user.id
+        
+        bookings_table = get_bookings_table()
+        properties_table = get_properties_table()
+
+        # Fetch all completed bookings for the given seeker_id
+        booking_response = bookings_table.scan(
+            FilterExpression=Attr('seeker_id').eq(seeker_id) & Attr('status').eq('completed')
+        )
+        bookings = booking_response.get('Items', [])
+        
+        property_ids = [b['property_id'] for b in bookings]
+
+        if not property_ids:
+            raise HTTPException(status_code=404, detail="No completed bookings found for the given seeker.")
+
+        # Fetch property details based on the property_ids from the bookings
+        prop_response = properties_table.scan(
+            FilterExpression=Attr('id').is_in(property_ids)
+        )
+        properties = prop_response.get('Items', [])
+        print(properties)
+
+        result = []
+        property_map = {prop['id']: prop for prop in properties}
+
+        for b in bookings:
+            try:
+                prop = property_map.get(b['property_id'])
+                if not prop:
+                    continue
+                
+                # Collect the required details for each completed booking
+                result.append({
+                    "property_id": prop['id'],
+                    "name": prop.get('title', 'Unknown Property'),
+                    "image": prop.get('image_urls', 'default_image_url'),  # Provide a default image URL if missing
+                    "description": prop.get('description', 'No description available'),
+                    "location": prop.get('location', 'Unknown Location')
+                })
+
+            except Exception as e:
+                print(f"❌ Error handling booking: {e}")
+                continue
+
+        print(result)
+
+        return result
+
+    except Exception as e:
+        print(f"🔥 /bookings/display/seeker error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch booking data.")
+
+
+
+
+@app.get("/bookings/transaction/user")
+async def get_user_transactions(current_user: UserBase = Depends(get_current_user)):
+    try:
+        seeker_id = current_user.id
+        
+        # Get the table resources
+        bookings_table = get_bookings_table()
+        properties_table = get_properties_table()
+        users_table = get_users_table()
+
+        # Scan all the bookings in the table (be cautious with large datasets)
+        booking_response = bookings_table.scan()  # This fetches the whole table
+        bookings = booking_response.get('Items', [])
+        
+        # Filter bookings based on seeker_id
+        seeker_bookings = [b for b in bookings if b.get('seeker_id') == seeker_id and b.get('status') == 'completed']
+        
+        if not seeker_bookings:
+            raise HTTPException(status_code=404, detail="No completed bookings found for the given seeker.")
+
+        # Now gather the property details by filtering from the bookings
+        property_ids = [b['property_id'] for b in seeker_bookings]
+
+        # Scan properties to get the relevant properties based on property_ids
+        property_response = properties_table.scan()
+        properties = property_response.get('Items', [])
+        filtered_properties = [p for p in properties if p['id'] in property_ids]
+
+        # Gather users (owners and seekers)
+        user_response = users_table.scan()
+        users = user_response.get('Items', [])
+        
+        result = []
+
+        for booking in seeker_bookings:
+            # Get the property details
+            property_details = next((p for p in filtered_properties if p['id'] == booking['property_id']), None)
+            if not property_details:
+                continue  # Skip if the property is not found
+
+            # Get the owner of the property using property_details['owner_id']
+            owner = next((user for user in users if user['id'] == property_details['owner_id']), None)
+
+            # Get the seeker details
+            seeker = next((user for user in users if user['id'] == seeker_id), None)
+
+            # Append the final transaction record
+            result.append({
+                "property_name": property_details['title'],
+                "property_location": property_details['location'],
+                "property_price": booking['total_price'],
+                "owner_name": owner['full_name'] if owner else 'Unknown Owner',
+                "seeker_name": seeker['full_name'] if seeker else 'Unknown Seeker',
+            })
+            print(result)
+
+        # Return the result
+        return result
+
+    except Exception as e:
+        print(f"🔥 /bookings/transaction/user error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch booking data.")
 
 
 if __name__ == '__main__':

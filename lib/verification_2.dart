@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'constants.dart';
+import 'transitions.dart';
 
 class Verification2Screen extends StatefulWidget {
   final int userType;
@@ -74,16 +75,16 @@ class _Verification2ScreenState extends State<Verification2Screen> {
         
         print("🔹 User verification status updated in secure storage");
         
-        // Navigate based on user type
+        // Navigate based on user type with shared axis transition
         if (widget.userType == 1) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => SelectPropertyTypeScreen()),
+            SharedAxisTransition(page: SelectPropertyTypeScreen()),
           );
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            SharedAxisTransition(page: HomeScreen()),
           );
         }
       } else {

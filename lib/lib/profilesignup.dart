@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../login.dart';
 import '../seeker_signup.dart';
 import '../owner_signup.dart';
-import 'page66(NoLoginProfile).dart'; // Import the profile page
+import 'NoLoginProfile)dart'; // Import the profile page
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});

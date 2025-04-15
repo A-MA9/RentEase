@@ -32,26 +32,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   void _showLoginPrompt(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Login Required"),
-        content: const Text("Please log in to view your favorite properties."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Login Required"),
+            content: const Text(
+              "Please log in to view your favorite properties.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                  ).then((_) => fetchFavorites());
+                },
+                child: const Text("Login"),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              ).then((_) => fetchFavorites());
-            },
-            child: const Text("Login"),
-          ),
-        ],
-      ),
     );
   }
 
@@ -61,15 +64,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
 
     bool isLoggedIn = await _isUserLoggedIn();
-    print('🔹 Is user logged in: $isLoggedIn');
-    
     if (!isLoggedIn) {
       setState(() {
         isLoading = false;
         favorites = [];
       });
-      
-      // Wait a bit before showing login prompt to avoid immediate dialog
       Future.delayed(const Duration(milliseconds: 300), () {
         _showLoginPrompt(context);
       });
@@ -79,7 +78,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     try {
       String? token = await storage.read(key: "access_token");
       if (token == null) {
-        print('❌ No token found for logged in user');
         setState(() {
           isLoading = false;
           favorites = [];
@@ -87,30 +85,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return;
       }
 
-      print('🔹 Token available, fetching favorites');
       final url = Uri.parse('${baseUrl}/favorites');
-      print('🔹 Making GET request to: $url');
-      
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
-      print('🔹 Response status code: ${response.statusCode}');
-      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('🔹 Favorites retrieved: ${data.length} items');
-        print('🔹 Favorites data: $data');
-        
         setState(() {
           favorites = data;
           isLoading = false;
         });
       } else {
-        print('❌ Failed to fetch favorites: ${response.statusCode} - ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to load favorites. Please try again.'),
@@ -123,7 +110,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         });
       }
     } catch (e) {
-      print('❌ Error fetching favorites: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Network error. Please check your connection.'),
@@ -150,23 +136,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       });
 
       final url = Uri.parse('${baseUrl}/favorites/toggle');
-      final Map<String, dynamic> requestData = {
-        'property_id': propertyId
-      };
-
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode(requestData),
+        body: json.encode({'property_id': propertyId}),
       );
 
       if (response.statusCode == 200) {
         fetchFavorites();
       } else {
-        print('❌ Failed to toggle favorite: ${response.statusCode} - ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to toggle favorite. Please try again.'),
@@ -175,7 +156,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         );
       }
     } catch (e) {
-      print('❌ Error toggling favorite: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Network error. Please check your connection.'),
@@ -191,11 +171,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: true,
         title: const Text(
           'My Favorites',
           style: TextStyle(color: Colors.black),
         ),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.black),
@@ -203,71 +188,59 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : favorites.isEmpty
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : favorites.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.favorite_border,
-                        size: 70,
-                        color: Colors.grey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.favorite_border,
+                      size: 70,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No favorites yet',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No favorites yet',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Properties you like will appear here',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context); // Go back to home
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.brown,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                        child: const Text('Explore Properties'),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: favorites.length,
-                  itemBuilder: (context, index) {
-                    final property = favorites[index];
-                    return PropertyCard(
-                      property: property,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RoomDetailsPage(
-                              propertyId: property['id'],
-                            ),
-                          ),
-                        ).then((_) => fetchFavorites());
-                      },
-                      onRemove: () async {
-                        await toggleFavorite(property['id'].toString());
-                      },
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Properties you like will appear here',
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
+              )
+              : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: favorites.length,
+                itemBuilder: (context, index) {
+                  final property = favorites[index];
+                  return PropertyCard(
+                    property: property,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  RoomDetailsPage(propertyId: property['id']),
+                        ),
+                      ).then((_) => fetchFavorites());
+                    },
+                    onRemove: () async {
+                      await toggleFavorite(property['id'].toString());
+                    },
+                  );
+                },
+              ),
     );
   }
 }
@@ -288,9 +261,7 @@ class PropertyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 2,
       child: InkWell(
         onTap: onTap,
@@ -305,42 +276,39 @@ class PropertyCard extends StatelessWidget {
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
                   ),
-                  child: property['image_urls'] != null &&
-                          property['image_urls'].isNotEmpty
-                      ? Image.network(
-                          property['image_urls'][0],
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 180,
-                              width: double.infinity,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.error),
-                            );
-                          },
-                        )
-                      : Container(
-                          height: 180,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: const Icon(
-                            Icons.home,
-                            size: 50,
-                            color: Colors.grey,
+                  child:
+                      property['image_urls'] != null &&
+                              property['image_urls'].isNotEmpty
+                          ? Image.network(
+                            property['image_urls'][0],
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Container(
+                                  height: 180,
+                                  width: double.infinity,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error),
+                                ),
+                          )
+                          : Container(
+                            height: 180,
+                            width: double.infinity,
+                            color: Colors.grey[200],
+                            child: const Icon(
+                              Icons.home,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
                 ),
                 Positioned(
                   top: 8,
                   right: 8,
                   child: IconButton(
                     onPressed: onRemove,
-                    icon: const Icon(
-                      Icons.favorite,
-                      color: Colors.red,
-                    ),
+                    icon: const Icon(Icons.favorite, color: Colors.red),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white.withOpacity(0.8),
                     ),
@@ -354,7 +322,9 @@ class PropertyCard extends StatelessWidget {
                     child: Container(
                       color: Colors.black.withOpacity(0.6),
                       padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 16),
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
                       child: Text(
                         '₹${property['price_per_month']}/month',
                         style: const TextStyle(
@@ -438,11 +408,8 @@ class PropertyCard extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: Colors.brown),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 12),
-        ),
+        Text(text, style: const TextStyle(fontSize: 12)),
       ],
     );
   }
-} 
+}

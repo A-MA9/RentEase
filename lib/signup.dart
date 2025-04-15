@@ -3,6 +3,7 @@ import 'login.dart';
 import 'seeker_signup.dart';
 import 'owner_signup.dart';
 import 'home_page.dart';
+import 'transitions.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -23,7 +24,7 @@ class SignUpScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
+                    SharedAxisTransition(page: HomePage()),
                   );
                 },
               ),
@@ -49,9 +50,7 @@ class SignUpScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const SeekerSignUpScreen(),
-                  ),
+                  SharedAxisTransition(page: const SeekerSignUpScreen()),
                 );
               },
               child: Container(
@@ -93,9 +92,7 @@ class SignUpScreen extends StatelessWidget {
                 // Handle owner selection
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const OwnerSignUpScreen(),
-                  ),
+                  SharedAxisTransition(page: const OwnerSignUpScreen()),
                 );
               },
               child: Container(
@@ -150,7 +147,7 @@ class SignUpScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                        SharedAxisTransition(page: LoginScreen()),
                       );
                     },
                     child: const Text(

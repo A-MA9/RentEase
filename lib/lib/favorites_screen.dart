@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/flutter_storage.dart';
 import '../room_details.dart';
+import '../constants.dart';
 
 class FavoritesScreen extends StatefulWidget {
   @override
@@ -29,7 +30,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
 
     try {
-      // Get token from secure storage
       final token = await SecureStorage.storage.read(key: 'access_token');
 
       if (token == null) {
@@ -40,14 +40,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return;
       }
 
-      // API URL based on platform
-      final apiUrl =
-          kIsWeb
-              ? 'http://localhost:8000/favorites' // For web
-              : 'http://10.0.2.2:8000/favorites'; // For Android emulator
+      // final baseUrl =
+      //     kIsWeb
+      //         ? 'http://localhost:8000/favorites'
+      //         : 'http://10.0.2.2:8000/favorites';
 
       final response = await http.get(
-        Uri.parse(apiUrl),
+        Uri.parse(baseUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -77,6 +76,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          color: Colors.black,
+        ),
         title: Text(
           'My Favorites',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -139,7 +145,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       itemBuilder: (context, index) {
         final property = _favorites[index];
 
-        // For now, let's display some mock data since we don't have actual favorite properties
         return Card(
           margin: EdgeInsets.only(bottom: 16),
           shape: RoundedRectangleBorder(

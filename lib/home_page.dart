@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'lib/page66(NoLoginProfile).dart'; // Import the profile page
+import 'lib/NoLoginProfile)dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'profile_router.dart'; // Import the profile router
 import 'lib/favorites_screen.dart'; // Import the favorites screen
@@ -14,27 +14,27 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 2; // Home is selected
   bool _isOwner = false;
-  
+
   @override
   void initState() {
     super.initState();
     _checkUserType();
   }
-  
+
   Future<void> _checkUserType() async {
     final isOwner = await NavigationHelper.isUserOwner();
     setState(() {
       _isOwner = isOwner;
     });
   }
-  
+
   void _onItemTapped(int index) async {
     if (_selectedIndex == index) return; // Avoid reloading the same page
-    
+
     setState(() {
       _selectedIndex = index;
     });
-    
+
     await NavigationHelper.handleBottomNavigation(context, index);
   }
 

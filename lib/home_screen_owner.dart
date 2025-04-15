@@ -378,7 +378,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 // Import the NEW SearchPage (make sure the path is correct)
 import 'search_page.dart';
 import 'home_page_owner.dart';
-import 'lib/page66(NoLoginProfile).dart'; // Check this import path
+import 'lib/NoLoginProfile)dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
 import 'owner_houses.dart';

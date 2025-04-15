@@ -1,25 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:panorama_viewer/panorama_viewer.dart';
-
-// class PanoramaView extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text("360° Room View")),
-//       body: Center(
-//         child: PanoramaViewer(
-//           child: Image.asset("assets/panoramic_room_1.jpg"),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// void main() {
-//   runApp(MaterialApp(home: PanoramaView()));
-// }
-
-// panorama.dart
 import 'package:flutter/material.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 
@@ -37,9 +15,20 @@ class PanoramaView extends StatelessWidget {
         elevation: 2,
       ),
       body: PanoramaViewer(
-        child: Image.network(imageUrl),
-        sensorControl: SensorControl.none, // ✅ lowercase 'none'
+        sensorControl: SensorControl.none,
         interactive: true,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(child: CircularProgressIndicator());
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(child: Icon(Icons.error, color: Colors.red));
+          },
+        ),
       ),
     );
   }

@@ -20,12 +20,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     fetchChats();
   }
 
-  // Removed hardcoded baseUrl definition
-  // final baseUrl =
-  //     kIsWeb
-  //         ? 'http://localhost:8000' // For web
-  //         : 'http://10.0.2.2:8000'; // For Android emulator
-
   Future<void> fetchChats() async {
     String? savedToken = await SecureStorage.storage.read(key: "access_token");
 
@@ -50,7 +44,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Chats")),
+      appBar: AppBar(
+        title: Text("Chats"),
+        // ✅ Add the leading property to the AppBar
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            // ✅ Navigate back to the previous page
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body:
           chats.isEmpty
               ? Center(

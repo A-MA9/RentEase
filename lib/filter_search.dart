@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'constants.dart';
+import 'search_page.dart';
 
 class FilterPage extends StatefulWidget {
+  final String? currentLocation;
+  final Function(Map<String, dynamic>)? onFiltersApplied;
+
+  const FilterPage({Key? key, this.currentLocation, this.onFiltersApplied})
+    : super(key: key);
+
   @override
   _FilterPageState createState() => _FilterPageState();
 }
 
 class _FilterPageState extends State<FilterPage> {
   String selectedDormitory = "";
-  String selectedPayTime = "Monthly";
+  int selectedMinStay = 1;
   TextEditingController minPriceController = TextEditingController(
     text: "5000",
   );
@@ -26,6 +36,54 @@ class _FilterPageState extends State<FilterPage> {
     {"name": "Lamp", "image": "assets/lamp.png"},
   ];
   Set<String> selectedFacilities = {};
+  bool isLoading = false;
+
+  Future<void> _applyFilters() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Prepare filter parameters
+      final filterParams = {
+        'dormitory_type': selectedDormitory,
+        'min_stay_months': selectedMinStay,
+        'min_price': minPriceController.text,
+        'max_price': maxPriceController.text,
+        'facilities': selectedFacilities.toList(),
+      };
+
+      // Call the backend API
+      final response = await http.post(
+        Uri.parse('${baseUrl}/properties/filter'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(filterParams),
+      );
+
+      if (response.statusCode == 200) {
+        final filteredProperties = json.decode(response.body);
+
+        // Pass the filtered results back to the search page
+        if (widget.onFiltersApplied != null) {
+          widget.onFiltersApplied!(filterParams);
+        }
+
+        Navigator.pop(context, filteredProperties);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to apply filters: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error applying filters: $e')));
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +95,32 @@ class _FilterPageState extends State<FilterPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle("Type Dormitory"),
-            _buildDormitorySelection(),
-            _buildSectionTitle("Pay Time"),
-            _buildPayTimeSelection(),
-            _buildSectionTitle("Price"),
-            _buildPriceInputs(),
-            _buildSectionTitle("Room Facility"),
-            _buildFacilitiesSelection(),
-            Spacer(),
-            _buildBottomButtons(),
-          ],
-        ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle("Type Dormitory"),
+                _buildDormitorySelection(),
+                _buildSectionTitle("Minimum Stay"),
+                _buildMinStaySelection(),
+                _buildSectionTitle("Price"),
+                _buildPriceInputs(),
+                _buildSectionTitle("Room Facility"),
+                _buildFacilitiesSelection(),
+                Spacer(),
+                _buildBottomButtons(),
+              ],
+            ),
+          ),
+          if (isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+        ],
       ),
     );
   }
@@ -135,18 +202,25 @@ class _FilterPageState extends State<FilterPage> {
     );
   }
 
-  Widget _buildPayTimeSelection() {
+  Widget _buildMinStaySelection() {
     return Wrap(
       spacing: 10,
       children:
-          ["Weekly", "Daily", "3 months", "Monthly", "Yearly", "6 months"].map((
-            payTime,
-          ) {
+          [1, 3, 6, 12].map((months) {
             return ChoiceChip(
-              label: Text(payTime),
-              selected: selectedPayTime == payTime,
+              label: Text("$months ${months == 1 ? 'month' : 'months'}"),
+              selected: selectedMinStay == months,
               onSelected:
-                  (selected) => setState(() => selectedPayTime = payTime),
+                  (selected) => setState(() => selectedMinStay = months),
+              selectedColor: Colors.brown.withOpacity(0.2),
+              backgroundColor: Colors.white,
+              labelStyle: TextStyle(
+                color: selectedMinStay == months ? Colors.brown : Colors.black,
+                fontWeight:
+                    selectedMinStay == months
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+              ),
             );
           }).toList(),
     );
@@ -241,23 +315,20 @@ class _FilterPageState extends State<FilterPage> {
             onPressed:
                 () => setState(() {
                   selectedDormitory = "";
-                  selectedPayTime = "Monthly";
+                  selectedMinStay = 1;
                   minPriceController.text = "5000";
                   maxPriceController.text = "9999";
                   selectedFacilities.clear();
                 }),
-            child: Text("Delete"),
+            child: Text("Reset"),
           ),
         ),
         SizedBox(width: 10),
         Expanded(
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: isLoading ? null : _applyFilters,
             style: ElevatedButton.styleFrom(backgroundColor: Colors.brown),
-            child: Text(
-              "Show Dormitories",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: Text("Apply"),
           ),
         ),
       ],

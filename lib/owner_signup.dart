@@ -9,6 +9,7 @@ import 'services/otp_service.dart';
 import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'constants.dart';
+import 'transitions.dart';
 
 class OwnerSignUpScreen extends StatefulWidget {
   const OwnerSignUpScreen({super.key});
@@ -125,16 +126,15 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
         
         print("🔹 Stored user data in secure storage");
         
-        // Registration successful, navigate to verification
+        // Registration successful, navigate to verification with shared axis transition
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (context) => VerificationScreen(
-                  userType: 1,
-                  email: _emailController.text,
-                  fullName: _nameController.text,
-                ),
+          SharedAxisTransition(
+            page: VerificationScreen(
+              userType: 1,
+              email: _emailController.text,
+              fullName: _nameController.text,
+            ),
           ),
         );
       } else {
@@ -164,7 +164,7 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SignUpScreen()),
+              SharedAxisTransition(page: const SignUpScreen()),
             );
           },
         ),
@@ -287,19 +287,6 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _registerOwner,
-                    // onPressed: () {
-                    //   Navigator.pushReplacement(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //       builder:
-                    //           (context) => VerificationScreen(
-                    //             userType: 1,
-                    //             email: _emailController.text,
-                    //             fullName: _nameController.text,
-                    //           ),
-                    //     ),
-                    //   );
-                    // },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.brown,
                       padding: const EdgeInsets.symmetric(vertical: 15),

@@ -9,6 +9,7 @@ import 'services/otp_service.dart';
 import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'constants.dart';
+import 'transitions.dart';
 
 class SeekerSignUpScreen extends StatefulWidget {
   const SeekerSignUpScreen({super.key});
@@ -120,11 +121,11 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
         
         print("🔹 Stored user data in secure storage");
         
-        // Registration successful, navigate to verification
+        // Registration successful, navigate to verification with shared axis transition
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => VerificationScreen(
+          SharedAxisTransition(
+            page: VerificationScreen(
               userType: 0,
               email: _emailController.text,
               fullName: _nameController.text,
@@ -157,7 +158,7 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SignUpScreen()),
+              SharedAxisTransition(page: const SignUpScreen()),
             );
           },
         ),

@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'search_page.dart';
 import 'home_page_owner.dart';
 import 'home_page.dart';
-import 'lib/page66(NoLoginProfile).dart'; // Check this import path
+import 'lib/NoLoginProfile)dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
 import 'favorites_screen.dart'; // Corrected import path
@@ -297,12 +297,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 print('Tapped on nearby property: ${rental['id']}');
                 // Navigate to Property Details Screen
                 Navigator.push(
-                  context, 
+                  context,
                   MaterialPageRoute(
-                    builder: (context) => RoomDetailsPage(
-                      propertyId: rental['id'],
-                    )
-                  )
+                    builder:
+                        (context) => RoomDetailsPage(propertyId: rental['id']),
+                  ),
                 );
               },
             ),
@@ -330,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // Use our NavigationHelper for other cases
       await NavigationHelper.handleBottomNavigation(
-        context, 
+        context,
         index,
         searchQuery: _searchController.text.trim(),
       );
@@ -344,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
       future: NavigationHelper.isUserOwner(),
       builder: (context, snapshot) {
         final isOwner = snapshot.data ?? false;
-        
+
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.white,
@@ -416,7 +415,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                       textInputAction:
-                          TextInputAction.search, // Show search icon on keyboard
+                          TextInputAction
+                              .search, // Show search icon on keyboard
                     ),
                   ),
                 ),
@@ -478,13 +478,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.brown.withOpacity(0.1),
                     ),
                     ActionChip(
-                      avatar: Icon(Icons.home_work, size: 16, color: Colors.brown),
+                      avatar: Icon(
+                        Icons.home_work,
+                        size: 16,
+                        color: Colors.brown,
+                      ),
                       label: Text("Bagru"),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SearchPage(initialQuery: "Bagru"),
+                            builder:
+                                (context) => SearchPage(initialQuery: "Bagru"),
                           ),
                         );
                       },
@@ -512,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
             isOwner: isOwner,
           ),
         );
-      }
+      },
     );
   }
 }
