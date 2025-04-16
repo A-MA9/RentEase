@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'lib/NoLoginProfile)dart'; // Import the profile page
+import 'lib/NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'profile_router.dart'; // Import the profile router
 import 'lib/favorites_screen.dart'; // Import the favorites screen
 import 'navigation_helper.dart';
+import 'transitions.dart'; // Import transitions
 
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _selectedIndex = 2; // Home is selected
   bool _isOwner = false;
+  AnimationController? _animationController;
 
   @override
   void initState() {
     super.initState();
     _checkUserType();
+    
+    // Initialize animation controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController?.dispose();
+    super.dispose();
   }
 
   Future<void> _checkUserType() async {
@@ -48,104 +62,123 @@ class _HomePageState extends State<HomePage> {
         isOwner: _isOwner,
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // **Header with Logo and Notification Icon**
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset('assets/image.png', height: 140, width: 140),
-                      const SizedBox(width: 20),
-                    ],
-                  ),
-                  const Icon(
-                    Icons.notifications,
-                    size: 28,
-                    color: Colors.black,
-                  ),
-                ],
-              ),
-            ),
-
-            // **Title & Subtitle**
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dormitory Finder',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Finding and renting a dormitory is easy.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // **Search Bar (Navigates to HomeScreen)**
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: GestureDetector(
-                onTap: () {
-                  // **Navigate to home_screen.dart**
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(30),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onVerticalDragEnd: (details) {
+            // Check if user is scrolling down with enough velocity
+            if (details.velocity.pixelsPerSecond.dy > 300 && _animationController != null) {
+              // Play quick animation
+              _animationController!.forward().then((_) {
+                _animationController!.reset();
+                Navigator.push(
+                  context,
+                  SharedAxisTransition(page: HomeScreen()),
+                );
+              });
+            }
+          },
+          child: FadeTransition(
+            opacity: Tween<double>(begin: 1.0, end: 0.7).animate(_animationController ?? AnimationController(vsync: this, duration: Duration.zero)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // **Header with Logo and Notification Icon**
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.search, color: Colors.grey),
-                      SizedBox(width: 8),
+                      Row(
+                        children: [
+                          Image.asset('assets/image.png', height: 140, width: 140),
+                          const SizedBox(width: 20),
+                        ],
+                      ),
+                      const Icon(
+                        Icons.notifications,
+                        size: 28,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // **Title & Subtitle**
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Search...',
+                        'Dormitory Finder',
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Finding and renting a dormitory is easy.',
                         style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // **Full Ad Image (Not Cut)**
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/ad.png',
-                    width: double.infinity,
-                    fit: BoxFit.contain,
+                // **Search Bar (Navigates to HomeScreen)**
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      // **Navigate to home_screen.dart**
+                      Navigator.push(
+                        context,
+                        SharedAxisTransition(page: HomeScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, color: Colors.grey),
+                          SizedBox(width: 8),
+                          Text(
+                            'Search...',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 16),
-          ],
+                const SizedBox(height: 16),
+
+                // **Full Ad Image (Not Cut)**
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/ad.png',
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
         ),
       ),
     );

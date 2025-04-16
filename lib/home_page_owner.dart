@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app_2/home_screen_owner.dart';
 import 'home_screen.dart'; // Import the home screen
-import 'lib/NoLoginProfile)dart'; // Import the profile page
+import 'lib/NoLoginProfile).dart'; // Import the profile page
 import 'chat_list.dart'; // Import the chat page
 import 'owner_houses.dart'; // Import the owner's buildings page
 import 'profile_router.dart'; // Import the profile router

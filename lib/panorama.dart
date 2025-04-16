@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
+import 'utils/loading_animations.dart';
 
 class PanoramaView extends StatelessWidget {
   final String imageUrl;
@@ -23,7 +24,7 @@ class PanoramaView extends StatelessWidget {
           filterQuality: FilterQuality.high,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: LoadingAnimations.panoramaLoading());
           },
           errorBuilder: (context, error, stackTrace) {
             return const Center(child: Icon(Icons.error, color: Colors.red));

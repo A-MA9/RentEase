@@ -10,6 +10,7 @@ import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'constants.dart';
 import 'transitions.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class SeekerSignUpScreen extends StatefulWidget {
   const SeekerSignUpScreen({super.key});
@@ -285,7 +286,10 @@ class _SeekerSignUpScreenState extends State<SeekerSignUpScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SpinKitThreeBounce(
+                            color: Colors.white,
+                            size: 24.0,
+                          )
                         : const Text(
                             "Sign Up",
                             style: TextStyle(fontSize: 18, color: Colors.white),

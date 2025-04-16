@@ -10,6 +10,8 @@ import 'chat_owner.dart';
 import 'login.dart';
 import 'tenants_list.dart';
 import 'constants.dart';
+import 'dart:io';
+import 'utils/loading_animations.dart';
 
 class RoomDetailsPage extends StatefulWidget {
   final dynamic propertyId;
@@ -57,26 +59,29 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   void _showLoginPrompt(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Login Required"),
-        content: const Text("You need to log in to perform this action."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Login Required"),
+            content: const Text("You need to log in to perform this action."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                },
+                child: const Text("Login"),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            child: const Text("Login"),
-          ),
-        ],
-      ),
     );
   }
 
@@ -99,17 +104,19 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       });
 
       // Print debug info
-      print('🔹 Attempting to toggle favorite for property: ${widget.propertyId}');
+      print(
+        '🔹 Attempting to toggle favorite for property: ${widget.propertyId}',
+      );
       print('🔹 User token available: ${token.isNotEmpty}');
-      
+
       final url = Uri.parse('${baseUrl}/favorites/toggle');
       final Map<String, dynamic> requestData = {
-        'property_id': widget.propertyId.toString()
+        'property_id': widget.propertyId.toString(),
       };
-      
+
       print('🔹 Sending request to $url');
       print('🔹 Request data: $requestData');
-      
+
       final response = await http.post(
         url,
         headers: {
@@ -128,7 +135,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           isFavorite = data['is_favorite'];
           isLoading = false;
         });
-        
+
         // Show success message
         final action = isFavorite ? 'added to' : 'removed from';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +146,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           ),
         );
       } else {
-        print('❌ Failed to toggle favorite: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Failed to toggle favorite: ${response.statusCode} - ${response.body}',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to update favorites. Please try again.'),
@@ -185,9 +194,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       final url = Uri.parse('${baseUrl}/check_favorite/${widget.propertyId}');
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
@@ -197,7 +204,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           isCheckingFavorite = false;
         });
       } else {
-        print('Failed to check favorite: ${response.statusCode} - ${response.body}');
+        print(
+          'Failed to check favorite: ${response.statusCode} - ${response.body}',
+        );
         setState(() {
           isCheckingFavorite = false;
         });
@@ -240,9 +249,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
 
   Future<void> fetchPropertyDetails() async {
     try {
-      final url = Uri.parse(
-        '${baseUrl}/get_property/${widget.propertyId}',
-      );
+      final url = Uri.parse('${baseUrl}/get_property/${widget.propertyId}');
       print('Fetching property details from: $url');
 
       final response = await http.get(url);
@@ -250,12 +257,13 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         print('🔹 Full property response: $responseData');
-        
+
         // Check for owner_id to fetch owner email
-        if (responseData.containsKey('owner_id') && responseData['owner_id'] != null) {
+        if (responseData.containsKey('owner_id') &&
+            responseData['owner_id'] != null) {
           String ownerId = responseData['owner_id'];
           print('🔹 Found owner_id: $ownerId');
-          
+
           // Fetch owner email using owner_id
           await fetchOwnerEmail(ownerId).then((ownerEmail) {
             if (ownerEmail != null && ownerEmail.isNotEmpty) {
@@ -266,12 +274,12 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         } else {
           print('❌ No owner_id found in response');
         }
-        
+
         setState(() {
           dormitory = responseData;
           isLoading = false;
         });
-        
+
         _checkFavorite();
       } else {
         print(
@@ -292,19 +300,19 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
       });
     }
   }
-  
+
   Future<String?> fetchOwnerEmail(String ownerId) async {
     try {
       // Endpoint to fetch user details by ID
       final url = Uri.parse('${baseUrl}/get_user_email/$ownerId');
       print('Fetching owner email from: $url');
-      
+
       final response = await http.get(url);
-      
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         print('🔹 Owner data response: $responseData');
-        
+
         // Extract email from response
         if (responseData.containsKey('email')) {
           return responseData['email'];
@@ -313,7 +321,9 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
           return null;
         }
       } else {
-        print('❌ Failed to fetch owner email: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Failed to fetch owner email: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -325,7 +335,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(body: Center(child: LoadingAnimations.primaryLoading()));
     }
 
     if (dormitory == null) {
@@ -348,25 +358,22 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
         ),
         centerTitle: true,
         actions: [
-          isCheckingFavorite 
-          ? const SizedBox(
-              width: 48,
-              height: 48,
-              child: Padding(
-                padding: EdgeInsets.all(12.0),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+          isCheckingFavorite
+              ? SizedBox(
+                width: 48,
+                height: 48,
+                child: Padding(
+                  padding: EdgeInsets.all(12.0),
+                  child: LoadingAnimations.favoriteLoading(),
                 ),
+              )
+              : IconButton(
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : Colors.black,
+                ),
+                onPressed: _toggleFavorite,
               ),
-            )
-          : IconButton(
-              icon: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite ? Colors.red : Colors.black,
-              ),
-              onPressed: _toggleFavorite,
-            ),
           IconButton(
             icon: const Icon(Icons.share, color: Colors.black),
             onPressed: () {},
@@ -388,12 +395,48 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                       width: double.infinity,
                       height: 250,
                       fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 250,
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: LoadingAnimations.imageLoading(),
+                          ),
+                        );
+                      },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           width: double.infinity,
                           height: 250,
                           color: Colors.grey[300],
-                          child: const Icon(Icons.error),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "Image not available",
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              if (error is SocketException)
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    "Network connectivity issue",
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -614,28 +657,46 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) {
-                                    final ownerEmail = dormitory!['owner_email'];
-                                    
-                                    if (ownerEmail == null || ownerEmail.isEmpty) {
-                                      print('⚠️ Warning: No owner email found for property ${widget.propertyId}, using owner_id instead');
+                                    final ownerEmail =
+                                        dormitory!['owner_email'];
+
+                                    if (ownerEmail == null ||
+                                        ownerEmail.isEmpty) {
+                                      print(
+                                        '⚠️ Warning: No owner email found for property ${widget.propertyId}, using owner_id instead',
+                                      );
                                       final ownerId = dormitory!['owner_id'];
                                     }
-                                    
+
                                     return CheckInDatePage(
-                                      dormitoryName: dormitory!['title'] ?? 'Unknown Dormitory',
-                                      ownerEmail: ownerEmail ?? dormitory!['owner_id'] ?? '',
-                                      totalAmount: double.parse(dormitory!['price_per_month']?.toString() ?? '0'),
+                                      dormitoryName:
+                                          dormitory!['title'] ??
+                                          'Unknown Dormitory',
+                                      ownerEmail:
+                                          ownerEmail ??
+                                          dormitory!['owner_id'] ??
+                                          '',
+                                      totalAmount: double.parse(
+                                        dormitory!['price_per_month']
+                                                ?.toString() ??
+                                            '0',
+                                      ),
                                       propertyId: widget.propertyId.toString(),
-                                      dormitoryImage: dormitory!['image_urls'] != null && dormitory!['image_urls'].isNotEmpty
-                                          ? dormitory!['image_urls'][0]
-                                          : 'https://via.placeholder.com/400x200?text=No+Image',
-                                      dormitoryDescription: dormitory!['description'] ?? '',
+                                      dormitoryImage:
+                                          dormitory!['image_urls'] != null &&
+                                                  dormitory!['image_urls']
+                                                      .isNotEmpty
+                                              ? dormitory!['image_urls'][0]
+                                              : 'https://via.placeholder.com/400x200?text=No+Image',
+                                      dormitoryDescription:
+                                          dormitory!['description'] ?? '',
                                       amenities: {
                                         'tv': dormitory!['tv'] ?? false,
                                         'fan': dormitory!['fan'] ?? false,
                                         'ac': dormitory!['ac'] ?? false,
                                         'chair': dormitory!['chair'] ?? false,
-                                        'ventilation': dormitory!['ventilation'] ?? false,
+                                        'ventilation':
+                                            dormitory!['ventilation'] ?? false,
                                         'ups': dormitory!['ups'] ?? false,
                                         'sofa': dormitory!['sofa'] ?? false,
                                         'lamp': dormitory!['lamp'] ?? false,

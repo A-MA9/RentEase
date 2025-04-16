@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'search_page.dart';
 import 'home_page_owner.dart';
 import 'home_page.dart';
-import 'lib/NoLoginProfile)dart'; // Check this import path
+import 'lib/NoLoginProfile).dart'; // Check this import path
 import 'profile_router.dart';
 import 'chat_list.dart';
 import 'favorites_screen.dart'; // Corrected import path
@@ -16,6 +16,7 @@ import 'services/flutter_storage.dart';
 import 'owner_houses.dart';
 import 'navigation_helper.dart';
 import 'constants.dart';
+import 'utils/loading_animations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -202,13 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 2. Handle Loading State
     if (_isLoading) {
-      return const Expanded(
-        child: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-          ),
-        ),
-      );
+      return Expanded(child: Center(child: LoadingAnimations.dataLoading()));
     }
 
     // 3. Handle Error State

@@ -10,6 +10,7 @@ import 'services/flutter_storage.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'constants.dart';
 import 'transitions.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class OwnerSignUpScreen extends StatefulWidget {
   const OwnerSignUpScreen({super.key});
@@ -293,9 +294,10 @@ class _OwnerSignUpScreenState extends State<OwnerSignUpScreen> {
                     ),
                     child:
                         _isLoading
-                            ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
+                            ? const SpinKitThreeBounce(
+                                color: Colors.white,
+                                size: 24.0,
+                              )
                             : const Text(
                               "Sign Up",
                               style: TextStyle(

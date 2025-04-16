@@ -10,6 +10,7 @@ import 'home_page_owner.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'forgot_password.dart';
 import 'constants.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 // Secure storage for JWT token
 final storage = FlutterSecureStorage();
@@ -250,7 +251,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _isLoading ? null : _login,
                 child:
                     _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SpinKitThreeBounce(
+                            color: Colors.white,
+                            size: 24.0,
+                          )
                         : const Text("Login", style: TextStyle(fontSize: 16)),
               ),
             ),

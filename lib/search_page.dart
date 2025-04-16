@@ -7,6 +7,7 @@ import 'room_details.dart';
 import 'constants.dart';
 import 'filter_search.dart';
 import 'transitions.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class SearchPage extends StatefulWidget {
   final String? initialQuery;
@@ -145,16 +146,17 @@ class _SearchPageState extends State<SearchPage> {
                       final results = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => FilterPage(
-                            currentLocation: _currentQuery,
-                            onFiltersApplied: (filters) {
-                              // Handle filter parameters if needed
-                              print('Applied filters: $filters');
-                            },
-                          ),
+                          builder:
+                              (context) => FilterPage(
+                                currentLocation: _currentQuery,
+                                onFiltersApplied: (filters) {
+                                  // Handle filter parameters if needed
+                                  print('Applied filters: $filters');
+                                },
+                              ),
                         ),
                       );
-                      
+
                       if (results != null) {
                         _handleFilterResults(results);
                       }
@@ -167,105 +169,115 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: _filteredResults.isNotEmpty
-                  ? _buildFilteredResults()
-                  : FutureBuilder<List<dynamic>>(
-                      future: _searchResultsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-                            ),
-                          );
-                        }
+              child:
+                  _filteredResults.isNotEmpty
+                      ? _buildFilteredResults()
+                      : FutureBuilder<List<dynamic>>(
+                        future: _searchResultsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.brown,
+                                ),
+                              ),
+                            );
+                          }
 
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: Colors.orange,
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  'Error: ${snapshot.error}',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.red[700]),
-                                ),
-                                const SizedBox(height: 15),
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.refresh),
-                                  label: const Text("Retry"),
-                                  onPressed: () => _triggerSearch(_currentQuery),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.brown,
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.orange,
+                                    size: 48,
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(
-                            child: Text(
-                              _currentQuery.isEmpty
-                                  ? 'Enter a location to search'
-                                  : 'No properties found for "$_currentQuery".',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                            ),
-                          );
-                        }
-
-                        final results = snapshot.data!;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Found ${results.length} Rentals for "$_currentQuery"',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: results.length,
-                                itemBuilder: (context, index) {
-                                  final property = results[index];
-                                  return GestureDetector(
-                                    onTap: () {
-                                      print(
-                                        'Tapped on search result: ${property['id']}',
-                                      );
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => RoomDetailsPage(
-                                            propertyId: property['id'],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: PropertyCard(
-                                      property: Map<String, dynamic>.from(property),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Error: ${snapshot.error}',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.red[700]),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text("Retry"),
+                                    onPressed:
+                                        () => _triggerSearch(_currentQuery),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.brown,
                                     ),
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                            );
+                          }
+
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Center(
+                              child: Text(
+                                _currentQuery.isEmpty
+                                    ? 'Enter a location to search'
+                                    : 'No properties found for "$_currentQuery".',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            );
+                          }
+
+                          final results = snapshot.data!;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Found ${results.length} Rentals for "$_currentQuery"',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: results.length,
+                                  itemBuilder: (context, index) {
+                                    final property = results[index];
+                                    return GestureDetector(
+                                      onTap: () {
+                                        print(
+                                          'Tapped on search result: ${property['id']}',
+                                        );
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => RoomDetailsPage(
+                                                  propertyId: property['id'],
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      child: PropertyCard(
+                                        property: Map<String, dynamic>.from(
+                                          property,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -296,9 +308,9 @@ class _SearchPageState extends State<SearchPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RoomDetailsPage(
-                        propertyId: property['id'],
-                      ),
+                      builder:
+                          (context) =>
+                              RoomDetailsPage(propertyId: property['id']),
                     ),
                   );
                 },
@@ -396,16 +408,14 @@ class PropertyCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value:
-                                  progress.expectedTotalBytes != null
-                                      ? progress.cumulativeBytesLoaded /
-                                          progress.expectedTotalBytes!
-                                      : null,
+                          return const Center(
+                            child: SpinKitFadingCircle(
+                              color: Colors.brown,
+                              size: 40.0,
                             ),
                           );
                         },
+
                         errorBuilder:
                             (context, error, stackTrace) => const Center(
                               child: Icon(Icons.broken_image, size: 40),

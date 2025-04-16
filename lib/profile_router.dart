@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'services/flutter_storage.dart';
-import 'lib/NoLoginProfile)dart'
+import 'lib/NoLoginProfile).dart'
     as GuestProfile; // Import the guest profile page
 import 'lib/LoginProfile.dart'
     as LoggedInProfile; // Import the logged-in profile page
 import 'lib/OwnerProfile.dart'
     as OwnerProfile; // Import the owner profile page - we'll create this next
+import 'utils/loading_animations.dart';
 
 class ProfileRouter extends StatelessWidget {
   const ProfileRouter({Key? key}) : super(key: key);
@@ -27,7 +28,9 @@ class ProfileRouter extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Show loading indicator while checking login status
           return Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.brown)),
+            body: Center(
+              child: LoadingAnimations.profileLoading(),
+            ),
           );
         }
 
