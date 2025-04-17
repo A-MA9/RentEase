@@ -332,6 +332,18 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
     }
   }
 
+  Widget _buildAmenityChip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.brown[50],
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.brown[100]!),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: Colors.brown)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -363,7 +375,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                 width: 48,
                 height: 48,
                 child: Padding(
-                  padding: EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(12.0),
                   child: LoadingAnimations.favoriteLoading(),
                 ),
               )
@@ -419,7 +431,7 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                                 size: 50,
                                 color: Colors.grey,
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
                                 "Image not available",
                                 style: TextStyle(color: Colors.grey[700]),
@@ -603,6 +615,44 @@ class _RoomDetailsPageState extends State<RoomDetailsPage> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 20),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Amenities',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          if (dormitory!['tv'] == true) _buildAmenityChip('TV'),
+                          if (dormitory!['ac'] == true) _buildAmenityChip('AC'),
+                          if (dormitory!['fan'] == true)
+                            _buildAmenityChip('Fan'),
+                          if (dormitory!['chair'] == true)
+                            _buildAmenityChip('Chair'),
+                          if (dormitory!['ventilation'] == true)
+                            _buildAmenityChip('Ventilation'),
+                          if (dormitory!['ups'] == true)
+                            _buildAmenityChip('UPS'),
+                          if (dormitory!['sofa'] == true)
+                            _buildAmenityChip('Sofa'),
+                          if (dormitory!['lamp'] == true)
+                            _buildAmenityChip('Lamp'),
+                          if (dormitory!['bath'] != null)
+                            _buildAmenityChip(
+                              '${dormitory!['bath']} Bath${dormitory!['bath'] > 1 ? 's' : ''}',
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

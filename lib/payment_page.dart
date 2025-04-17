@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'payment_success_page.dart';
+import 'package:intl/intl.dart';
 
 class PaymentPage extends StatefulWidget {
   final String dormitoryName;
   final String ownerEmail;
   final DateTime checkInDate;
+  final DateTime checkoutDate;
   final double totalAmount;
 
   const PaymentPage({
@@ -13,6 +15,7 @@ class PaymentPage extends StatefulWidget {
     required this.dormitoryName,
     required this.ownerEmail,
     required this.checkInDate,
+    required this.checkoutDate,
     required this.totalAmount,
   }) : super(key: key);
 
@@ -37,11 +40,18 @@ class _PaymentPageState extends State<PaymentPage> {
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    return DateFormat('d MMM yyyy').format(date);
+  }
+
+  int get numberOfDays =>
+      widget.checkoutDate.difference(widget.checkInDate).inDays;
+
   Future<void> _processPayment() async {
     if (selectedPaymentMethod == 'upi' && upiController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter UPI ID')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter UPI ID')));
       return;
     }
 
@@ -69,26 +79,16 @@ class _PaymentPageState extends State<PaymentPage> {
 
     // Navigate to success page
     if (mounted) {
-      print('🔹 Payment processed successfully');
-      print('🔹 Dormitory name: ${widget.dormitoryName}');
-      print('🔹 Owner email: ${widget.ownerEmail}');
-      print('🔹 Check-in date: ${widget.checkInDate}');
-      print('🔹 Total amount: ${widget.totalAmount}');
-      
-      // Check if owner email is empty
-      if (widget.ownerEmail.isEmpty) {
-        print('❌ Owner email is empty in payment page!');
-      }
-      
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => PaymentSuccessPage(
-            dormitoryName: widget.dormitoryName,
-            ownerEmail: widget.ownerEmail,
-            checkInDate: widget.checkInDate,
-            totalAmount: widget.totalAmount,
-          ),
+          builder:
+              (context) => PaymentSuccessPage(
+                dormitoryName: widget.dormitoryName,
+                ownerEmail: widget.ownerEmail,
+                checkInDate: widget.checkInDate,
+                totalAmount: widget.totalAmount,
+              ),
         ),
       );
     }
@@ -126,8 +126,19 @@ class _PaymentPageState extends State<PaymentPage> {
                     ),
                     const SizedBox(height: 10),
                     _buildSummaryRow('Dormitory', widget.dormitoryName),
-                    _buildSummaryRow('Check-in Date', widget.checkInDate.toString().split(' ')[0]),
-                    _buildSummaryRow('Total Amount', '₹${widget.totalAmount}'),
+                    _buildSummaryRow(
+                      'Check-in',
+                      _formatDate(widget.checkInDate),
+                    ),
+                    _buildSummaryRow(
+                      'Check-out',
+                      _formatDate(widget.checkoutDate),
+                    ),
+                    _buildSummaryRow('Stay Duration', '$numberOfDays days'),
+                    _buildSummaryRow(
+                      'Total Amount',
+                      '₹${widget.totalAmount.toStringAsFixed(2)}',
+                    ),
                   ],
                 ),
               ),
@@ -136,10 +147,7 @@ class _PaymentPageState extends State<PaymentPage> {
               // Payment Method Selection
               const Text(
                 'Select Payment Method',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               _buildPaymentMethodOption('UPI', 'upi'),
@@ -166,15 +174,13 @@ class _PaymentPageState extends State<PaymentPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: isProcessing
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Pay Now',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                  child:
+                      isProcessing
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                            'Pay Now',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
-                        ),
                 ),
               ),
             ],
@@ -191,10 +197,7 @@ class _PaymentPageState extends State<PaymentPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -220,9 +223,7 @@ class _PaymentPageState extends State<PaymentPage> {
       decoration: InputDecoration(
         labelText: 'Enter UPI ID',
         hintText: 'example@upi',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -235,9 +236,7 @@ class _PaymentPageState extends State<PaymentPage> {
           decoration: InputDecoration(
             labelText: 'Card Number',
             hintText: '1234 5678 9012 3456',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [
@@ -288,4 +287,4 @@ class _PaymentPageState extends State<PaymentPage> {
       ],
     );
   }
-} 
+}

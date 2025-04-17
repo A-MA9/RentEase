@@ -28,9 +28,11 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
   final TextEditingController _typeController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _roomsAvailableController = TextEditingController(text: "1");
+  final TextEditingController _roomsAvailableController = TextEditingController(
+    text: "1",
+  );
   final TextEditingController _priceController = TextEditingController();
-  
+
   // Amenities checkboxes
   Map<String, bool> amenities = {
     'tv': false,
@@ -49,13 +51,11 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
       final ImagePicker picker = ImagePicker();
       final XFile? result = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 80,
+        imageQuality: 100,
       );
 
       if (result != null) {
-        setState(() { 
+        setState(() {
           _isUploading = true;
           _uploadStatus = 'Preparing image...';
         });
@@ -72,9 +72,9 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
         }
 
         setState(() => _uploadStatus = 'Uploading image to S3...');
-        
+
         final String? imageUrl = await AwsService.uploadImage(fileToUpload);
-        
+
         if (imageUrl != null) {
           setState(() {
             if (isPanoramic) {
@@ -84,7 +84,7 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
             }
             _uploadStatus = 'Upload complete!';
           });
-          
+
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -92,10 +92,12 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // For debugging
           print('Image URL added: $imageUrl');
-          print('Total images: ${isPanoramic ? _uploadedPanoramicUrls.length : _uploadedImageUrls.length}');
+          print(
+            'Total images: ${isPanoramic ? _uploadedPanoramicUrls.length : _uploadedImageUrls.length}',
+          );
         } else {
           setState(() => _uploadStatus = 'Upload failed');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +134,9 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
         _uploadedImageUrls.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill all required fields and upload at least one image'),
+          content: Text(
+            'Please fill all required fields and upload at least one image',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -217,12 +221,12 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTextField(
-                "Dormitory Name", 
+                "Dormitory Name",
                 "Fill name Dormitory",
                 controller: _nameController,
               ),
               _buildTextField(
-                "Type of Room", 
+                "Type of Room",
                 "Fill type",
                 controller: _typeController,
               ),
@@ -248,7 +252,7 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
                 controller: _descriptionController,
               ),
               _buildTextField(
-                "Address", 
+                "Address",
                 "Fill in the address",
                 controller: _addressController,
               ),
@@ -259,7 +263,7 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
                 keyboardType: TextInputType.number,
               ),
               _buildTextField(
-                "Price", 
+                "Price",
                 "Enter price per month",
                 controller: _priceController,
                 keyboardType: TextInputType.number,
@@ -285,11 +289,14 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
                   _buildAmenityCheckbox('Lamp', 'lamp'),
                 ],
               ),
-              
+
               SizedBox(height: 15),
               Row(
                 children: [
-                  Text("Bathrooms:", style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(
+                    "Bathrooms:",
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                   SizedBox(width: 15),
                   InkWell(
                     onTap: () {
@@ -349,23 +356,30 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _isCreating ? null : _createDormitory,
-                child: _isCreating 
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
+                child:
+                    _isCreating
+                        ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Creating...",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        )
+                        : Text(
+                          "Create Dormitory",
+                          style: TextStyle(color: Colors.white),
                         ),
-                        SizedBox(width: 10),
-                        Text("Creating...", style: TextStyle(color: Colors.white)),
-                      ],
-                    )
-                  : Text("Create Dormitory", style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown,
                   padding: EdgeInsets.symmetric(vertical: 12),
@@ -402,8 +416,10 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
     );
   }
 
-  Widget _buildTextField(String label, String hint, {
-    int maxLines = 1, 
+  Widget _buildTextField(
+    String label,
+    String hint, {
+    int maxLines = 1,
     TextEditingController? controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
@@ -468,42 +484,44 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
   }
 
   Widget _buildImagePicker({required bool isPanoramic}) {
-    List<String> imageUrls = isPanoramic ? _uploadedPanoramicUrls : _uploadedImageUrls;
-    
+    List<String> imageUrls =
+        isPanoramic ? _uploadedPanoramicUrls : _uploadedImageUrls;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _isUploading && _uploadStatus.isNotEmpty
             ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-                      ),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
                     ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _uploadStatus,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _uploadStatus,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
-                  ],
-                ),
-              )
+                  ),
+                ],
+              ),
+            )
             : SizedBox(),
         SizedBox(height: 8),
         ElevatedButton.icon(
           icon: Icon(Icons.add_a_photo),
           label: Text(isPanoramic ? "Add Panoramic View" : "Add Photo"),
-          onPressed: _isUploading
-              ? null
-              : () => _pickAndUploadImages(isPanoramic: isPanoramic),
+          onPressed:
+              _isUploading
+                  ? null
+                  : () => _pickAndUploadImages(isPanoramic: isPanoramic),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.brown[100],
             foregroundColor: Colors.brown[800],
@@ -515,76 +533,78 @@ class _DormitoryDetailsPageState extends State<DormitoryDetailsPage> {
         SizedBox(height: 10),
         imageUrls.isNotEmpty
             ? Container(
-                height: 110,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: imageUrls.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              image: DecorationImage(
-                                image: imageUrls[index].startsWith('data:')
-                                    ? MemoryImage(
-                                        base64Decode(
-                                          imageUrls[index].split(',')[1],
-                                        ),
-                                      ) as ImageProvider
-                                    : NetworkImage(imageUrls[index]),
-                                fit: BoxFit.cover,
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: imageUrls.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image:
+                                  imageUrls[index].startsWith('data:')
+                                      ? MemoryImage(
+                                            base64Decode(
+                                              imageUrls[index].split(',')[1],
+                                            ),
+                                          )
+                                          as ImageProvider
+                                      : NetworkImage(imageUrls[index]),
+                              fit: BoxFit.cover,
+                            ),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                imageUrls.removeAt(index);
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
                               ),
-                              border: Border.all(color: Colors.grey[300]!),
+                              child: Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  imageUrls.removeAt(index);
-                                });
-                              },
-                              child: Container(
-                                padding: EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              )
-            : Container(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey[200],
-                ),
-                child: Text(
-                  isPanoramic
-                      ? "No panoramic views uploaded yet"
-                      : "No images uploaded yet",
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
+            )
+            : Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.grey[200],
+              ),
+              child: Text(
+                isPanoramic
+                    ? "No panoramic views uploaded yet"
+                    : "No images uploaded yet",
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
       ],
     );
   }

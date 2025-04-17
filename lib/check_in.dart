@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'constants.dart';
+import 'checkout_date.dart';
 
 class CheckInDatePage extends StatefulWidget {
   final String dormitoryName;
@@ -35,59 +36,60 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
   DateTime _focusedDay = DateTime.now();
   final FlutterSecureStorage storage = const FlutterSecureStorage();
 
-  Future<void> _createBooking() async {
-    try {
-      final userId = await storage.read(key: "user_id");
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to book')),
-        );
-        return;
-      }
+  // Future<void> _createBooking() async {
+  //   try {
+  //     final userId = await storage.read(key: "user_id");
+  //     if (userId == null) {
+  //       ScaffoldMessenger.of(
+  //         context,
+  //       ).showSnackBar(const SnackBar(content: Text('Please login to book')));
+  //       return;
+  //     }
 
-      final url = Uri.parse('${baseUrl}/bookings/');
-      print('Creating booking with data: ${json.encode({
-        'user_id': userId,
-        'property_id': widget.propertyId,
-        'check_in_date': _selectedDay.toIso8601String(),
-        'total_amount': widget.totalAmount.toString(),
-      })}');
+  //     final url = Uri.parse('${baseUrl}/bookings/');
+  //     print(
+  //       'Creating booking with data: ${json.encode({'user_id': userId, 'property_id': widget.propertyId, 'check_in_date': _selectedDay.toIso8601String(), 'total_amount': widget.totalAmount.toString()})}',
+  //     );
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'property_id': widget.propertyId,
-          'check_in_date': _selectedDay.toIso8601String(),
-          'total_amount': widget.totalAmount.toString(),
-        }),
-      );
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: json.encode({
+  //         'user_id': userId,
+  //         'property_id': widget.propertyId,
+  //         'check_in_date': _selectedDay.toIso8601String(),
+  //         'total_amount': widget.totalAmount.toString(),
+  //       }),
+  //     );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Booking created successfully!')),
-          );
-          Navigator.pop(context);
-        }
-      } else {
-        print('Failed to create booking: ${response.statusCode} - ${response.body}');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create booking: ${response.body}')),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error creating booking: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating booking: $e')),
-        );
-      }
-    }
-  }
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(content: Text('Booking created successfully!')),
+  //         );
+  //         Navigator.pop(context);
+  //       }
+  //     } else {
+  //       print(
+  //         'Failed to create booking: ${response.statusCode} - ${response.body}',
+  //       );
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Failed to create booking: ${response.body}'),
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     print('Error creating booking: $e');
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(
+  //         context,
+  //       ).showSnackBar(SnackBar(content: Text('Error creating booking: $e')));
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -177,16 +179,17 @@ class _CheckInDatePageState extends State<CheckInDatePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CheckoutPage(
-                        selectedDate: _selectedDay,
-                        dormitoryName: widget.dormitoryName,
-                        ownerEmail: widget.ownerEmail,
-                        totalAmount: widget.totalAmount,
-                        propertyId: widget.propertyId,
-                        dormitoryImage: widget.dormitoryImage,
-                        dormitoryDescription: widget.dormitoryDescription,
-                        amenities: widget.amenities,
-                      ),
+                      builder:
+                          (context) => CheckoutDatePage(
+                            checkInDate: _selectedDay,
+                            dormitoryName: widget.dormitoryName,
+                            ownerEmail: widget.ownerEmail,
+                            totalAmount: widget.totalAmount,
+                            propertyId: widget.propertyId,
+                            dormitoryImage: widget.dormitoryImage,
+                            dormitoryDescription: widget.dormitoryDescription,
+                            amenities: widget.amenities,
+                          ),
                     ),
                   );
                 },
